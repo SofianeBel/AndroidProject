@@ -5,6 +5,8 @@ public class User {
     private String username;
     private String email;
     private String profileImageUrl;
+    private String bannerImageUrl;
+    private String bio;
     private long createdAt;
 
     // Required empty constructor for Firestore
@@ -52,6 +54,22 @@ public class User {
 
     public void setProfileImageUrl(String profileImageUrl) {
         this.profileImageUrl = profileImageUrl;
+    }
+    
+    public String getBannerImageUrl() {
+        return bannerImageUrl;
+    }
+
+    public void setBannerImageUrl(String bannerImageUrl) {
+        this.bannerImageUrl = bannerImageUrl;
+    }
+
+    public String getBio() {
+        return bio;
+    }
+
+    public void setBio(String bio) {
+        this.bio = bio;
     }
 
     public long getCreatedAt() {
