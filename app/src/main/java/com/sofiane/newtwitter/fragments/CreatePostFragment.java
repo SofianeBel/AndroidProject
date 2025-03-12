@@ -2,6 +2,8 @@ package com.sofiane.newtwitter.fragments;
 
 import android.net.Uri;
 import android.os.Bundle;
+import android.os.Handler;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -64,7 +66,7 @@ public class CreatePostFragment extends Fragment {
         super.onViewCreated(view, savedInstanceState);
         
         auth = FirebaseAuth.getInstance();
-        database = FirebaseDatabase.getInstance();
+        database = FirebaseDatabase.getInstance("https://newtwitter-65ad1-default-rtdb.europe-west1.firebasedatabase.app");
         postsRef = database.getReference("posts");
         storage = FirebaseStorage.getInstance();
         
@@ -130,32 +132,54 @@ public class CreatePostFragment extends Fragment {
         binding.postProgress.setVisibility(View.VISIBLE);
         binding.postButton.setEnabled(false);
         
-        if (selectedImageUri != null) {
-            // Upload image first
-            String replyId = UUID.randomUUID().toString();
-            StorageReference storageRef = storage.getReference().child("post_images/" + replyId);
-            storageRef.putFile(selectedImageUri)
-                    .addOnSuccessListener(taskSnapshot -> 
-                        storageRef.getDownloadUrl().addOnSuccessListener(downloadUri -> {
-                            // Create reply with image URL
-                            createReplyWithImage(content, downloadUri.toString());
-                            clearForm();
-                            navigateBack();
-                        })
-                    )
-                    .addOnFailureListener(e -> {
-                        binding.postProgress.setVisibility(View.GONE);
-                        binding.postButton.setEnabled(true);
-                        Toast.makeText(requireContext(), getString(R.string.failed_to_upload_image, e.getMessage()), Toast.LENGTH_SHORT).show();
-                    });
-        } else {
-            // No image to upload, create reply directly
-            postViewModel.createReply(content, parentPostId);
+        try {
+            if (selectedImageUri != null) {
+                // Upload image first
+                String replyId = UUID.randomUUID().toString();
+                StorageReference storageRef = storage.getReference().child("post_images/" + replyId);
+                storageRef.putFile(selectedImageUri)
+                        .addOnSuccessListener(taskSnapshot -> 
+                            storageRef.getDownloadUrl().addOnSuccessListener(downloadUri -> {
+                                try {
+                                    // Create reply with image URL
+                                    createReplyWithImage(content, downloadUri.toString());
+                                    clearForm();
+                                    navigateBack();
+                                } catch (Exception e) {
+                                    Log.e("CreatePostFragment", "Error after image upload for reply: " + e.getMessage(), e);
+                                    binding.postProgress.setVisibility(View.GONE);
+                                    binding.postButton.setEnabled(true);
+                                    Toast.makeText(requireContext(), "Réponse créée mais erreur lors de la navigation", Toast.LENGTH_SHORT).show();
+                                }
+                            })
+                        )
+                        .addOnFailureListener(e -> {
+                            binding.postProgress.setVisibility(View.GONE);
+                            binding.postButton.setEnabled(true);
+                            Toast.makeText(requireContext(), getString(R.string.failed_to_upload_image, e.getMessage()), Toast.LENGTH_SHORT).show();
+                        });
+            } else {
+                // No image to upload, create reply directly
+                postViewModel.createReply(content, parentPostId);
+                binding.postProgress.setVisibility(View.GONE);
+                binding.postButton.setEnabled(true);
+                Toast.makeText(requireContext(), getString(R.string.reply_created_successfully), Toast.LENGTH_SHORT).show();
+                clearForm();
+                
+                // Ajouter un délai avant de naviguer pour éviter les problèmes
+                new Handler().postDelayed(() -> {
+                    try {
+                        navigateBack();
+                    } catch (Exception e) {
+                        Log.e("CreatePostFragment", "Error navigating back after reply: " + e.getMessage(), e);
+                    }
+                }, 300); // Délai de 300ms
+            }
+        } catch (Exception e) {
+            Log.e("CreatePostFragment", "Error in createReply: " + e.getMessage(), e);
             binding.postProgress.setVisibility(View.GONE);
             binding.postButton.setEnabled(true);
-            Toast.makeText(requireContext(), getString(R.string.reply_created_successfully), Toast.LENGTH_SHORT).show();
-            clearForm();
-            navigateBack();
+            Toast.makeText(requireContext(), "Erreur lors de la création de la réponse: " + e.getMessage(), Toast.LENGTH_SHORT).show();
         }
     }
     
@@ -210,32 +234,54 @@ public class CreatePostFragment extends Fragment {
         binding.postProgress.setVisibility(View.VISIBLE);
         binding.postButton.setEnabled(false);
         
-        if (selectedImageUri != null) {
-            // Upload image first
-            String postId = UUID.randomUUID().toString();
-            StorageReference storageRef = storage.getReference().child("post_images/" + postId);
-            storageRef.putFile(selectedImageUri)
-                    .addOnSuccessListener(taskSnapshot -> 
-                        storageRef.getDownloadUrl().addOnSuccessListener(downloadUri -> {
-                            // Create post with image URL
-                            createPostWithImage(content, downloadUri.toString());
-                            clearForm();
-                            navigateBack();
-                        })
-                    )
-                    .addOnFailureListener(e -> {
-                        binding.postProgress.setVisibility(View.GONE);
-                        binding.postButton.setEnabled(true);
-                        Toast.makeText(requireContext(), getString(R.string.failed_to_upload_image, e.getMessage()), Toast.LENGTH_SHORT).show();
-                    });
-        } else {
-            // No image to upload, create post directly
-            postViewModel.createPost(content);
+        try {
+            if (selectedImageUri != null) {
+                // Upload image first
+                String postId = UUID.randomUUID().toString();
+                StorageReference storageRef = storage.getReference().child("post_images/" + postId);
+                storageRef.putFile(selectedImageUri)
+                        .addOnSuccessListener(taskSnapshot -> 
+                            storageRef.getDownloadUrl().addOnSuccessListener(downloadUri -> {
+                                try {
+                                    // Create post with image URL
+                                    createPostWithImage(content, downloadUri.toString());
+                                    clearForm();
+                                    navigateBack();
+                                } catch (Exception e) {
+                                    Log.e("CreatePostFragment", "Error after image upload: " + e.getMessage(), e);
+                                    binding.postProgress.setVisibility(View.GONE);
+                                    binding.postButton.setEnabled(true);
+                                    Toast.makeText(requireContext(), "Post créé mais erreur lors de la navigation", Toast.LENGTH_SHORT).show();
+                                }
+                            })
+                        )
+                        .addOnFailureListener(e -> {
+                            binding.postProgress.setVisibility(View.GONE);
+                            binding.postButton.setEnabled(true);
+                            Toast.makeText(requireContext(), getString(R.string.failed_to_upload_image, e.getMessage()), Toast.LENGTH_SHORT).show();
+                        });
+            } else {
+                // No image to upload, create post directly
+                postViewModel.createPost(content);
+                binding.postProgress.setVisibility(View.GONE);
+                binding.postButton.setEnabled(true);
+                Toast.makeText(requireContext(), getString(R.string.post_created_successfully), Toast.LENGTH_SHORT).show();
+                clearForm();
+                
+                // Ajouter un délai avant de naviguer pour éviter les problèmes
+                new Handler().postDelayed(() -> {
+                    try {
+                        navigateBack();
+                    } catch (Exception e) {
+                        Log.e("CreatePostFragment", "Error navigating back after delay: " + e.getMessage(), e);
+                    }
+                }, 300); // Délai de 300ms
+            }
+        } catch (Exception e) {
+            Log.e("CreatePostFragment", "Error in createPost: " + e.getMessage(), e);
             binding.postProgress.setVisibility(View.GONE);
             binding.postButton.setEnabled(true);
-            Toast.makeText(requireContext(), getString(R.string.post_created_successfully), Toast.LENGTH_SHORT).show();
-            clearForm();
-            navigateBack();
+            Toast.makeText(requireContext(), "Erreur lors de la création du post: " + e.getMessage(), Toast.LENGTH_SHORT).show();
         }
     }
     
@@ -288,12 +334,36 @@ public class CreatePostFragment extends Fragment {
     }
     
     private void navigateBack() {
-        Navigation.findNavController(requireView()).navigateUp();
+        try {
+            // Vérifier si le fragment est toujours attaché à l'activité
+            if (isAdded() && getView() != null) {
+                Navigation.findNavController(requireView()).navigateUp();
+            }
+        } catch (Exception e) {
+            // Gérer l'exception pour éviter le crash
+            Log.e("CreatePostFragment", "Error navigating back: " + e.getMessage(), e);
+            // Essayer une autre méthode pour revenir en arrière
+            try {
+                requireActivity().onBackPressed();
+            } catch (Exception ex) {
+                Log.e("CreatePostFragment", "Error with onBackPressed: " + ex.getMessage(), ex);
+            }
+        }
     }
     
     @Override
     public void onDestroyView() {
         super.onDestroyView();
         binding = null;
+    }
+    
+    @Override
+    public void onPause() {
+        super.onPause();
+        // Annuler toutes les opérations en cours si le fragment est mis en pause
+        if (binding != null) {
+            binding.postProgress.setVisibility(View.GONE);
+            binding.postButton.setEnabled(true);
+        }
     }
 } 

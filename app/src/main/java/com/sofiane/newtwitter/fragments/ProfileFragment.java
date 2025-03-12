@@ -57,8 +57,9 @@ public class ProfileFragment extends Fragment implements PostAdapter.OnPostInter
         // Initialize Firebase
         auth = FirebaseAuth.getInstance();
         currentUser = auth.getCurrentUser();
-        usersRef = FirebaseDatabase.getInstance().getReference("users");
-        postsRef = FirebaseDatabase.getInstance().getReference("posts");
+        FirebaseDatabase database = FirebaseDatabase.getInstance("https://newtwitter-65ad1-default-rtdb.europe-west1.firebasedatabase.app");
+        usersRef = database.getReference("users");
+        postsRef = database.getReference("posts");
 
         // Check if we're viewing another user's profile
         if (getArguments() != null && getArguments().containsKey("userId")) {

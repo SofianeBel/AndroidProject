@@ -81,7 +81,8 @@ public class EditProfileFragment extends Fragment {
         // Initialize Firebase
         auth = FirebaseAuth.getInstance();
         currentUser = auth.getCurrentUser();
-        usersRef = FirebaseDatabase.getInstance().getReference("users");
+        FirebaseDatabase database = FirebaseDatabase.getInstance("https://newtwitter-65ad1-default-rtdb.europe-west1.firebasedatabase.app");
+        usersRef = database.getReference("users");
         storageRef = FirebaseStorage.getInstance().getReference();
 
         if (currentUser == null) {

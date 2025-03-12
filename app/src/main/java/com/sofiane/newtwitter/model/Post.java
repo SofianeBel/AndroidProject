@@ -165,7 +165,29 @@ public class Post {
         if (timestamp instanceof Long) {
             this.createdAt = new Date((Long) timestamp);
         } else if (timestamp instanceof Map) {
-            // Ignorer les autres formats
+            Map<String, Object> timestampMap = (Map<String, Object>) timestamp;
+            if (timestampMap.containsKey("time")) {
+                Object timeValue = timestampMap.get("time");
+                if (timeValue instanceof Long) {
+                    this.createdAt = new Date((Long) timeValue);
+                    return;
+                }
+            }
+            // Si on ne peut pas extraire le temps, utiliser la date actuelle
+            this.createdAt = new Date();
+        } else if (timestamp instanceof HashMap) {
+            HashMap<String, Object> timestampMap = (HashMap<String, Object>) timestamp;
+            if (timestampMap.containsKey("time")) {
+                Object timeValue = timestampMap.get("time");
+                if (timeValue instanceof Long) {
+                    this.createdAt = new Date((Long) timeValue);
+                    return;
+                }
+            }
+            // Si on ne peut pas extraire le temps, utiliser la date actuelle
+            this.createdAt = new Date();
+        } else {
+            // Pour tout autre type, utiliser la date actuelle
             this.createdAt = new Date();
         }
     }
