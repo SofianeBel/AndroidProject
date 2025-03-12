@@ -4,6 +4,7 @@ import android.app.Activity;
 import android.content.Intent;
 import android.net.Uri;
 import android.os.Bundle;
+import android.provider.MediaStore;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -44,6 +45,9 @@ import android.Manifest;
 import android.content.pm.PackageManager;
 import android.os.Build;
 import com.google.firebase.storage.StorageException;
+
+import android.graphics.Bitmap;
+import android.graphics.ByteArrayOutputStream;
 
 public class EditProfileFragment extends Fragment {
     private static final String TAG = "EditProfileFragment";
@@ -368,9 +372,14 @@ public class EditProfileFragment extends Fragment {
         }
 
         if (storageRef == null) {
-            Log.e(TAG, "uploadProfileImage: storageRef is null");
-            listener.onFailure("Erreur d'initialisation du stockage");
-            return;
+            try {
+                storageRef = FirebaseStorage.getInstance().getReference();
+                Log.d(TAG, "Storage reference initialized");
+            } catch (Exception e) {
+                Log.e(TAG, "Failed to initialize storage reference: " + e.getMessage(), e);
+                listener.onFailure("Erreur d'initialisation du stockage: " + e.getMessage());
+                return;
+            }
         }
 
         if (currentUser == null || currentUser.getUid() == null) {
@@ -380,18 +389,27 @@ public class EditProfileFragment extends Fragment {
         }
 
         try {
-            String fileName = UUID.randomUUID().toString();
-            String path = isBanner ? "banner_images/" : "profile_images/";
-            String fullPath = path + currentUser.getUid() + "/" + fileName;
+            String fileName = UUID.randomUUID().toString() + ".jpg";
+            String path = isBanner ? "banner_images" : "profile_images";
+            String fullPath = path + "/" + currentUser.getUid() + "/" + fileName;
             
             Log.d(TAG, "Uploading " + (isBanner ? "banner" : "profile") + " image to: " + fullPath);
             
-            StorageReference fileRef = storageRef.child(fullPath);
+            StorageReference fileRef = FirebaseStorage.getInstance().getReference().child(fullPath);
             
             // Show progress
             binding.progressBar.setVisibility(View.VISIBLE);
             
-            fileRef.putFile(imageUri)
+            // Compression de l'image avant l'upload
+            ByteArrayOutputStream baos = new ByteArrayOutputStream();
+            Bitmap bitmap = MediaStore.Images.Media.getBitmap(requireActivity().getContentResolver(), imageUri);
+            bitmap = getResizedBitmap(bitmap, isBanner ? 1200 : 800); // Redimensionner selon le type d'image
+            bitmap.compress(Bitmap.CompressFormat.JPEG, 80, baos);
+            byte[] data = baos.toByteArray();
+            
+            // Upload des données compressées
+            UploadTask uploadTask = fileRef.putBytes(data);
+            uploadTask
                 .addOnSuccessListener(taskSnapshot -> {
                     Log.d(TAG, "Image uploaded successfully to: " + fullPath);
                     fileRef.getDownloadUrl()
@@ -428,6 +446,9 @@ public class EditProfileFragment extends Fragment {
                             case StorageException.ERROR_RETRY_LIMIT_EXCEEDED:
                                 errorMessage = "Limite de tentatives dépassée";
                                 break;
+                            case StorageException.ERROR_OBJECT_NOT_FOUND:
+                                errorMessage = "Erreur: Chemin de stockage non trouvé";
+                                break;
                             default:
                                 errorMessage = "Erreur de téléchargement: " + e.getMessage();
                         }
@@ -446,6 +467,25 @@ public class EditProfileFragment extends Fragment {
             binding.progressBar.setVisibility(View.GONE);
             listener.onFailure("Erreur inattendue: " + e.getMessage());
         }
+    }
+
+    // Méthode pour redimensionner les images avant upload
+    private Bitmap getResizedBitmap(Bitmap image, int maxSize) {
+        int width = image.getWidth();
+        int height = image.getHeight();
+        
+        float bitmapRatio = (float) width / (float) height;
+        if (bitmapRatio > 1) {
+            // Image plus large que haute
+            width = maxSize;
+            height = (int) (width / bitmapRatio);
+        } else {
+            // Image plus haute que large
+            height = maxSize;
+            width = (int) (height * bitmapRatio);
+        }
+        
+        return Bitmap.createScaledBitmap(image, width, height, true);
     }
 
     @Override
