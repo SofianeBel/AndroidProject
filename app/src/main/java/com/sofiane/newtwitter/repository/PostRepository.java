@@ -474,6 +474,12 @@ public class PostRepository {
                 username = "User" + userId.substring(0, 5);
             }
             
+            // Créer des copies finales des variables pour utilisation dans la classe anonyme
+            final String finalUserId = userId;
+            final String finalUsername = username;
+            final String finalContent = content;
+            final String finalParentPostId = parentPostId;
+            
             // Generate a unique key for the new reply
             String replyId = postsRef.push().getKey();
             if (replyId == null) {
@@ -481,8 +487,10 @@ public class PostRepository {
                 return;
             }
             
+            final String finalReplyId = replyId;
+            
             // Récupérer le post parent pour obtenir le nom d'utilisateur
-            postsRef.child(parentPostId).addListenerForSingleValueEvent(new ValueEventListener() {
+            postsRef.child(finalParentPostId).addListenerForSingleValueEvent(new ValueEventListener() {
                 @Override
                 public void onDataChange(@NonNull DataSnapshot dataSnapshot) {
                     try {
@@ -491,32 +499,32 @@ public class PostRepository {
                         
                         // Create reply object
                         Post reply = new Post(
-                            replyId,
-                            userId,
-                            username,
-                            content,
+                            finalReplyId,
+                            finalUserId,
+                            finalUsername,
+                            finalContent,
                             null, // No image URL for now
                             new Date(),
                             0, // Initial like count
-                            parentPostId, // Parent post ID
+                            finalParentPostId, // Parent post ID
                             parentUsername // Parent username
                         );
                         
                         // Save reply to Firebase
-                        postsRef.child(replyId).setValue(reply)
+                        postsRef.child(finalReplyId).setValue(reply)
                             .addOnSuccessListener(aVoid -> {
-                                Log.d(TAG, "Reply created successfully with ID: " + replyId);
+                                Log.d(TAG, "Reply created successfully with ID: " + finalReplyId);
                                 
                                 // Increment comment count on parent post
-                                postsRef.child(parentPostId).child("commentCount").addListenerForSingleValueEvent(
+                                postsRef.child(finalParentPostId).child("commentCount").addListenerForSingleValueEvent(
                                     new ValueEventListener() {
                                         @Override
                                         public void onDataChange(@NonNull DataSnapshot snapshot) {
                                             Integer currentComments = snapshot.getValue(Integer.class);
                                             if (currentComments != null) {
-                                                postsRef.child(parentPostId).child("commentCount").setValue(currentComments + 1);
+                                                postsRef.child(finalParentPostId).child("commentCount").setValue(currentComments + 1);
                                             } else {
-                                                postsRef.child(parentPostId).child("commentCount").setValue(1);
+                                                postsRef.child(finalParentPostId).child("commentCount").setValue(1);
                                             }
                                         }
 
