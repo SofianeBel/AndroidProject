@@ -1,4 +1,51 @@
-# H3 Project - Application Twitter-like
+# NewTwitter
+
+Une application Android de microblogging inspirée de Twitter, permettant aux utilisateurs de partager des posts, d'interagir avec d'autres utilisateurs et de gérer leur profil.
+
+## Fonctionnalités
+
+### Version 1.2.0
+- **Système de suivi** : Suivre/ne plus suivre d'autres utilisateurs
+- **Compteurs de followers et following** : Affichage du nombre d'abonnés et d'abonnements
+- **Interface utilisateur améliorée** : Boutons stylisés pour les actions de suivi
+
+### Version 1.1.0
+- **Profils utilisateurs** : Affichage et modification des informations de profil
+- **Images de profil et bannières** : Personnalisation de l'apparence du profil
+- **Biographie** : Ajout d'une description personnelle
+- **Posts personnels** : Affichage des posts de l'utilisateur sur son profil
+
+### Version 1.0.0
+- **Authentification** : Inscription et connexion des utilisateurs
+- **Création de posts** : Publication de messages courts
+- **Timeline** : Affichage des posts récents
+- **Interactions** : Like, retweet et réponse aux posts
+- **Détail des posts** : Vue détaillée d'un post avec ses réponses
+
+## Technologies utilisées
+
+- Firebase Authentication pour la gestion des utilisateurs
+- Firebase Realtime Database pour le stockage des données
+- Firebase Storage pour le stockage des images
+- Glide pour le chargement des images
+- CircleImageView pour les images de profil rondes
+- Architecture MVVM (Model-View-ViewModel)
+- Navigation Component pour la navigation entre les écrans
+
+## Installation
+
+1. Clonez ce dépôt
+2. Ouvrez le projet dans Android Studio
+3. Connectez l'application à votre propre projet Firebase
+4. Exécutez l'application sur un émulateur ou un appareil Android
+
+## Prochaines fonctionnalités
+
+- Recherche d'utilisateurs et de posts
+- Notifications en temps réel
+- Messages privés entre utilisateurs
+- Hashtags et tendances
+- Mode sombre
 
 ## Résolution du problème de chargement infini
 

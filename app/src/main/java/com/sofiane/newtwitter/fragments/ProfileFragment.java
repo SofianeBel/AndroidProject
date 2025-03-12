@@ -10,6 +10,7 @@ import android.widget.Toast;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.fragment.app.Fragment;
+import androidx.lifecycle.ViewModelProvider;
 import androidx.navigation.Navigation;
 import androidx.recyclerview.widget.LinearLayoutManager;
 
@@ -27,6 +28,7 @@ import com.sofiane.newtwitter.adapter.PostAdapter;
 import com.sofiane.newtwitter.databinding.FragmentProfileBinding;
 import com.sofiane.newtwitter.model.Post;
 import com.sofiane.newtwitter.model.User;
+import com.sofiane.newtwitter.viewmodel.FollowViewModel;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -39,6 +41,7 @@ public class ProfileFragment extends Fragment implements PostAdapter.OnPostInter
     private DatabaseReference usersRef;
     private DatabaseReference postsRef;
     private PostAdapter postAdapter;
+    private FollowViewModel followViewModel;
     private List<Post> userPosts = new ArrayList<>();
     private String userId;
     private boolean isCurrentUserProfile = true;
@@ -60,6 +63,9 @@ public class ProfileFragment extends Fragment implements PostAdapter.OnPostInter
         FirebaseDatabase database = FirebaseDatabase.getInstance("https://newtwitter-65ad1-default-rtdb.europe-west1.firebasedatabase.app");
         usersRef = database.getReference("users");
         postsRef = database.getReference("posts");
+        
+        // Initialize ViewModel
+        followViewModel = new ViewModelProvider(requireActivity()).get(FollowViewModel.class);
 
         // Check if we're viewing another user's profile
         if (getArguments() != null && getArguments().containsKey("userId")) {
@@ -76,6 +82,12 @@ public class ProfileFragment extends Fragment implements PostAdapter.OnPostInter
 
         // Set up RecyclerView for posts
         setupRecyclerView();
+        
+        // Set up follow button
+        setupFollowButton();
+        
+        // Observe follow status changes
+        observeFollowStatus();
 
         // Set up edit profile button
         binding.editProfileButton.setOnClickListener(v -> {
@@ -87,10 +99,59 @@ public class ProfileFragment extends Fragment implements PostAdapter.OnPostInter
 
         // Show/hide edit button based on whose profile we're viewing
         binding.editProfileButton.setVisibility(isCurrentUserProfile ? View.VISIBLE : View.GONE);
+        binding.followButton.setVisibility(isCurrentUserProfile ? View.GONE : View.VISIBLE);
 
         // Load user profile and posts
         loadUserProfile();
         loadUserPosts();
+        
+        // Load follow counts
+        followViewModel.loadFollowCounts(userId);
+    }
+    
+    private void setupFollowButton() {
+        if (!isCurrentUserProfile && currentUser != null) {
+            binding.followButton.setOnClickListener(v -> {
+                if (binding.followButton.getText().toString().equals(getString(R.string.follow))) {
+                    followViewModel.followUser(userId);
+                } else {
+                    followViewModel.unfollowUser(userId);
+                }
+            });
+            
+            // Check if current user is following this profile
+            followViewModel.checkFollowStatus(userId);
+        }
+    }
+    
+    private void observeFollowStatus() {
+        // Observe follow status
+        followViewModel.getFollowStatus().observe(getViewLifecycleOwner(), isFollowing -> {
+            if (isFollowing) {
+                binding.followButton.setText(R.string.unfollow);
+                binding.followButton.setBackgroundResource(R.drawable.button_outline_background);
+            } else {
+                binding.followButton.setText(R.string.follow);
+                binding.followButton.setBackgroundResource(R.drawable.button_primary_background);
+            }
+        });
+        
+        // Observe followers count
+        followViewModel.getFollowersCount().observe(getViewLifecycleOwner(), count -> {
+            binding.followersCount.setText(count + " " + getString(R.string.followers));
+        });
+        
+        // Observe following count
+        followViewModel.getFollowingCount().observe(getViewLifecycleOwner(), count -> {
+            binding.followingCount.setText(count + " " + getString(R.string.following));
+        });
+        
+        // Observe error messages
+        followViewModel.getErrorMessage().observe(getViewLifecycleOwner(), errorMessage -> {
+            if (errorMessage != null && !errorMessage.isEmpty()) {
+                Toast.makeText(requireContext(), errorMessage, Toast.LENGTH_SHORT).show();
+            }
+        });
     }
 
     private void setupRecyclerView() {
@@ -151,6 +212,10 @@ public class ProfileFragment extends Fragment implements PostAdapter.OnPostInter
                     .placeholder(android.R.color.holo_blue_light)
                     .into(binding.coverImage);
         }
+        
+        // Update follow counts
+        binding.followersCount.setText(user.getFollowersCount() + " " + getString(R.string.followers));
+        binding.followingCount.setText(user.getFollowingCount() + " " + getString(R.string.following));
     }
 
     private void loadUserPosts() {
@@ -181,7 +246,7 @@ public class ProfileFragment extends Fragment implements PostAdapter.OnPostInter
                 postAdapter.setPosts(userPosts);
                 
                 // Update post count
-                binding.postsCount.setText(postCount + " Posts");
+                binding.postsCount.setText(postCount + " " + getString(R.string.posts));
                 
                 // Show/hide empty state
                 if (userPosts.isEmpty()) {
