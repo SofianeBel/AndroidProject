@@ -1,0 +1,5 @@
+[33mcommit 79ae21820d1648ee4c553e60b014c15126c2ae48[m[33m ([m[1;36mHEAD -> [m[1;32mmain[m[33m)[m
+Author: Sifly <118746369+SofianeBel@users.noreply.github.com>
+Date:   Wed Mar 12 14:58:53 2025 +0100
+
+    Correction du problème de récupération des données de profil utilisateur. Mise à jour de la version à 1.3.1

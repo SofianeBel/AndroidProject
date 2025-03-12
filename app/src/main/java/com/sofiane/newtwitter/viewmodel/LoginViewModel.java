@@ -54,7 +54,7 @@ public class LoginViewModel extends ViewModel {
                                     firebaseUser.getEmail());
                                 
                                 database.getReference("users").child(firebaseUser.getUid()).setValue(user)
-                                    .addOnSuccessListener(aVoid -> {
+                                    .addOnSuccessListener(dbVoid -> {
                                         currentUser.setValue(user);
                                     })
                                     .addOnFailureListener(e -> {
@@ -107,7 +107,7 @@ public class LoginViewModel extends ViewModel {
                         .build();
 
                     firebaseUser.updateProfile(profileUpdates)
-                        .addOnSuccessListener(aVoid -> {
+                        .addOnSuccessListener(profileVoid -> {
                             Log.d(TAG, "Firebase user profile updated successfully");
                             // User created and profile updated successfully
                             User newUser = new User(firebaseUser.getUid(), username, email);

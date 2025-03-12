@@ -61,7 +61,7 @@ public class RegisterViewModel extends ViewModel {
                                     // Ajouter également l'utilisateur à la Realtime Database
                                     FirebaseDatabase database = FirebaseDatabase.getInstance("https://newtwitter-65ad1-default-rtdb.europe-west1.firebasedatabase.app");
                                     database.getReference("users").child(firebaseUser.getUid()).setValue(user)
-                                        .addOnSuccessListener(aVoid -> {
+                                        .addOnSuccessListener(dbVoid -> {
                                             Log.d(TAG, "User document created in Realtime Database");
                                             
                                             // Déconnecter l'utilisateur pour qu'il doive se connecter explicitement
@@ -116,7 +116,7 @@ public class RegisterViewModel extends ViewModel {
                         .addOnSuccessListener(queryDocumentSnapshots -> {
                             if (!queryDocumentSnapshots.isEmpty()) {
                                 queryDocumentSnapshots.getDocuments().get(0).getReference().delete()
-                                    .addOnSuccessListener(aVoid -> {
+                                    .addOnSuccessListener(deleteVoid -> {
                                         Log.d(TAG, "Document deleted successfully, please try registration again");
                                         errorMessage.setValue("This email was previously used. Please try registration again.");
                                     })
