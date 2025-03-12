@@ -334,7 +334,7 @@ public class HomeFragment extends Fragment implements PostAdapter.OnPostInteract
             Log.d(TAG, "Navigation vers le profil utilisateur: " + userId);
             Bundle args = new Bundle();
             args.putString("userId", userId);
-            Navigation.findNavController(requireView()).navigate(R.id.action_homeFragment_to_profileFragment, args);
+            Navigation.findNavController(requireView()).navigate(R.id.action_navigation_home_to_profileFragment, args);
         } catch (Exception e) {
             Log.e(TAG, "Erreur lors de la navigation vers le profil: " + e.getMessage(), e);
             Toast.makeText(requireContext(), "Erreur lors de la navigation vers le profil", Toast.LENGTH_SHORT).show();
