@@ -33,6 +33,7 @@ import com.sofiane.newtwitter.model.Post;
 import com.sofiane.newtwitter.model.User;
 import com.sofiane.newtwitter.utils.ProfileIconHelper;
 import com.sofiane.newtwitter.viewmodel.FollowViewModel;
+import de.hdodenhof.circleimageview.CircleImageView;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -419,5 +420,28 @@ public class ProfileFragment extends Fragment implements PostAdapter.OnPostInter
     public void onPostReplied(Post post) {
         // Gérer la réponse à un post
         Toast.makeText(requireContext(), "Réponse non implémentée dans le profil", Toast.LENGTH_SHORT).show();
+    }
+
+    @Override
+    public void onUserProfileClicked(String userId) {
+        try {
+            if (userId == null || userId.isEmpty()) {
+                Toast.makeText(requireContext(), "ID utilisateur invalide", Toast.LENGTH_SHORT).show();
+                return;
+            }
+            
+            // Si c'est le même profil que celui actuellement affiché, ne rien faire
+            if (userId.equals(this.userId)) {
+                return;
+            }
+            
+            Log.d(TAG, "Navigation vers le profil utilisateur: " + userId);
+            Bundle args = new Bundle();
+            args.putString("userId", userId);
+            Navigation.findNavController(requireView()).navigate(R.id.action_profileFragment_self, args);
+        } catch (Exception e) {
+            Log.e(TAG, "Erreur lors de la navigation vers le profil: " + e.getMessage(), e);
+            Toast.makeText(requireContext(), "Erreur lors de la navigation vers le profil", Toast.LENGTH_SHORT).show();
+        }
     }
 } 

@@ -1,5 +1,7 @@
 package com.sofiane.newtwitter.fragments;
 
+import android.content.Context;
+import android.graphics.drawable.Drawable;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.LayoutInflater;
@@ -16,11 +18,18 @@ import androidx.recyclerview.widget.LinearLayoutManager;
 
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
+import com.google.firebase.database.DataSnapshot;
+import com.google.firebase.database.DatabaseError;
+import com.google.firebase.database.DatabaseReference;
+import com.google.firebase.database.FirebaseDatabase;
+import com.google.firebase.database.ValueEventListener;
 import com.sofiane.newtwitter.R;
 import com.sofiane.newtwitter.adapter.PostAdapter;
 import com.sofiane.newtwitter.databinding.FragmentPostDetailBinding;
 import com.sofiane.newtwitter.model.Post;
+import com.sofiane.newtwitter.utils.ProfileIconHelper;
 import com.sofiane.newtwitter.viewmodel.PostViewModel;
+import de.hdodenhof.circleimageview.CircleImageView;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -33,6 +42,7 @@ public class PostDetailFragment extends Fragment implements PostAdapter.OnPostIn
     private PostAdapter repliesAdapter;
     private Post currentPost;
     private String postId;
+    private DatabaseReference usersRef;
 
     @Nullable
     @Override
@@ -44,6 +54,10 @@ public class PostDetailFragment extends Fragment implements PostAdapter.OnPostIn
     @Override
     public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
         super.onViewCreated(view, savedInstanceState);
+
+        // Initialiser Firebase Database
+        FirebaseDatabase database = FirebaseDatabase.getInstance("https://newtwitter-65ad1-default-rtdb.europe-west1.firebasedatabase.app");
+        usersRef = database.getReference("users");
 
         // Récupérer l'ID du post depuis les arguments
         if (getArguments() != null) {
@@ -117,11 +131,19 @@ public class PostDetailFragment extends Fragment implements PostAdapter.OnPostIn
 
     private void displayPostDetails(Post post) {
         // Afficher les détails du post
-        binding.profileImageView.setImageResource(R.drawable.ic_person);
+        String userIdToLoad = post.isRetweet() ? post.getOriginalUserId() : post.getUserId();
+        loadUserProfileIcon(userIdToLoad, binding.profileImageView);
+        
         binding.usernameTextView.setText(post.getUsername());
         binding.handleTextView.setText("@" + post.getUsername().toLowerCase().replace(" ", ""));
         binding.contentTextView.setText(post.getContent());
         binding.timeTextView.setText(post.getRelativeTime());
+        
+        // Configurer les clics sur le nom d'utilisateur et la photo de profil
+        View.OnClickListener profileClickListener = v -> navigateToUserProfile(userIdToLoad);
+        binding.profileImageView.setOnClickListener(profileClickListener);
+        binding.usernameTextView.setOnClickListener(profileClickListener);
+        binding.handleTextView.setOnClickListener(profileClickListener);
         
         // Afficher les compteurs
         binding.likeCountTextView.setText(String.valueOf(post.getLikeCount()));
@@ -264,6 +286,84 @@ public class PostDetailFragment extends Fragment implements PostAdapter.OnPostIn
         } catch (Exception e) {
             Log.e(TAG, "Error navigating to reply: " + e.getMessage(), e);
             Toast.makeText(requireContext(), "Erreur lors de la navigation: " + e.getMessage(), Toast.LENGTH_SHORT).show();
+        }
+    }
+
+    @Override
+    public void onUserProfileClicked(String userId) {
+        navigateToUserProfile(userId);
+    }
+
+    /**
+     * Charge l'icône de profil d'un utilisateur à partir de Firebase
+     * @param userId L'ID de l'utilisateur
+     * @param imageView La vue d'image à mettre à jour
+     */
+    private void loadUserProfileIcon(String userId, CircleImageView imageView) {
+        if (userId == null || userId.isEmpty()) {
+            // Si l'ID utilisateur est invalide, utiliser l'icône par défaut
+            imageView.setImageResource(R.drawable.ic_profile_person);
+            return;
+        }
+        
+        usersRef.child(userId).addListenerForSingleValueEvent(new ValueEventListener() {
+            @Override
+            public void onDataChange(@NonNull DataSnapshot snapshot) {
+                if (snapshot.exists()) {
+                    try {
+                        // Récupérer les index d'icône et de couleur
+                        Integer iconIndex = snapshot.child("profileIconIndex").getValue(Integer.class);
+                        Integer colorIndex = snapshot.child("profileColorIndex").getValue(Integer.class);
+                        
+                        if (iconIndex != null && colorIndex != null) {
+                            Context context = imageView.getContext();
+                            // Obtenir l'icône colorée
+                            Drawable coloredIcon = ProfileIconHelper.getColoredProfileIcon(
+                                    context, iconIndex, colorIndex);
+                            
+                            // Mettre à jour l'image de profil
+                            imageView.setImageDrawable(coloredIcon);
+                        } else {
+                            // Utiliser l'icône par défaut si les index sont null
+                            imageView.setImageResource(R.drawable.ic_profile_person);
+                        }
+                    } catch (Exception e) {
+                        Log.e(TAG, "Erreur lors du chargement de l'icône de profil: " + e.getMessage(), e);
+                        // En cas d'erreur, utiliser l'icône par défaut
+                        imageView.setImageResource(R.drawable.ic_profile_person);
+                    }
+                } else {
+                    // Si l'utilisateur n'existe pas, utiliser l'icône par défaut
+                    imageView.setImageResource(R.drawable.ic_profile_person);
+                }
+            }
+            
+            @Override
+            public void onCancelled(@NonNull DatabaseError error) {
+                Log.e(TAG, "Erreur lors de la récupération des données utilisateur: " + error.getMessage());
+                // En cas d'erreur, utiliser l'icône par défaut
+                imageView.setImageResource(R.drawable.ic_profile_person);
+            }
+        });
+    }
+    
+    /**
+     * Navigue vers le profil de l'utilisateur
+     * @param userId L'ID de l'utilisateur
+     */
+    private void navigateToUserProfile(String userId) {
+        if (userId == null || userId.isEmpty()) {
+            Toast.makeText(requireContext(), "ID utilisateur invalide", Toast.LENGTH_SHORT).show();
+            return;
+        }
+        
+        try {
+            Bundle args = new Bundle();
+            args.putString("userId", userId);
+            Navigation.findNavController(requireView()).navigate(R.id.action_postDetailFragment_to_profileFragment, args);
+        } catch (Exception e) {
+            Log.e(TAG, "Erreur lors de la navigation vers le profil: " + e.getMessage(), e);
+            Toast.makeText(requireContext(), "Erreur lors de la navigation vers le profil", Toast.LENGTH_SHORT).show();
         }
     }
 

@@ -1,5 +1,7 @@
 package com.sofiane.newtwitter.adapter;
 
+import android.content.Context;
+import android.graphics.drawable.Drawable;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -11,6 +13,12 @@ import androidx.recyclerview.widget.RecyclerView;
 
 import com.sofiane.newtwitter.R;
 import com.sofiane.newtwitter.model.Post;
+import com.sofiane.newtwitter.utils.ProfileIconHelper;
+import com.google.firebase.database.DataSnapshot;
+import com.google.firebase.database.DatabaseError;
+import com.google.firebase.database.DatabaseReference;
+import com.google.firebase.database.FirebaseDatabase;
+import com.google.firebase.database.ValueEventListener;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -22,6 +30,7 @@ public class PostAdapter extends RecyclerView.Adapter<PostAdapter.PostViewHolder
     private List<Post> posts = new ArrayList<>();
     private OnPostInteractionListener listener;
     private Random random = new Random(); // Pour générer des nombres aléatoires pour les compteurs
+    private DatabaseReference usersRef;
 
     public interface OnPostInteractionListener {
         void onPostLiked(Post post);
@@ -29,10 +38,14 @@ public class PostAdapter extends RecyclerView.Adapter<PostAdapter.PostViewHolder
         void onPostRetweeted(Post post);
         void onPostShared(Post post);
         void onPostReplied(Post post);
+        void onUserProfileClicked(String userId);
     }
 
     public PostAdapter(OnPostInteractionListener listener) {
         this.listener = listener;
+        // Initialiser la référence à la base de données des utilisateurs
+        FirebaseDatabase database = FirebaseDatabase.getInstance("https://newtwitter-65ad1-default-rtdb.europe-west1.firebasedatabase.app");
+        usersRef = database.getReference("users");
     }
 
     @NonNull
@@ -133,17 +146,50 @@ public class PostAdapter extends RecyclerView.Adapter<PostAdapter.PostViewHolder
                     listener.onPostReplied(posts.get(position));
                 }
             });
+
+            profileImageView.setOnClickListener(v -> {
+                int position = getAdapterPosition();
+                if (position != RecyclerView.NO_POSITION && listener != null) {
+                    Post post = posts.get(position);
+                    String userId = post.isRetweet() ? post.getOriginalUserId() : post.getUserId();
+                    listener.onUserProfileClicked(userId);
+                }
+            });
+
+            usernameTextView.setOnClickListener(v -> {
+                int position = getAdapterPosition();
+                if (position != RecyclerView.NO_POSITION && listener != null) {
+                    Post post = posts.get(position);
+                    String userId = post.isRetweet() ? post.getOriginalUserId() : post.getUserId();
+                    listener.onUserProfileClicked(userId);
+                }
+            });
+
+            handleTextView.setOnClickListener(v -> {
+                int position = getAdapterPosition();
+                if (position != RecyclerView.NO_POSITION && listener != null) {
+                    Post post = posts.get(position);
+                    String userId = post.isRetweet() ? post.getOriginalUserId() : post.getUserId();
+                    listener.onUserProfileClicked(userId);
+                }
+            });
         }
 
         public void bind(Post post) {
-            profileImageView.setImageResource(R.drawable.ic_person);
+            // Par défaut, utiliser l'icône de personne
+            profileImageView.setImageResource(R.drawable.ic_profile_person);
             
+            // Déterminer quel userId utiliser pour charger l'icône de profil
+            String userIdToLoad;
             if (post.isRetweet() && retweetedByLayout != null) {
                 retweetedByLayout.setVisibility(View.VISIBLE);
                 retweetedByTextView.setText(post.getUsername() + " a retweeté");
                 
                 usernameTextView.setText(post.getOriginalUsername());
                 handleTextView.setText("@" + post.getOriginalUsername().toLowerCase().replace(" ", ""));
+                
+                // Pour un retweet, charger l'icône de profil de l'utilisateur original
+                userIdToLoad = post.getOriginalUserId();
             } else {
                 if (retweetedByLayout != null) {
                     retweetedByLayout.setVisibility(View.GONE);
@@ -151,7 +197,13 @@ public class PostAdapter extends RecyclerView.Adapter<PostAdapter.PostViewHolder
                 
                 usernameTextView.setText(post.getUsername());
                 handleTextView.setText("@" + post.getUsername().toLowerCase().replace(" ", ""));
+                
+                // Pour un post normal, charger l'icône de profil de l'auteur
+                userIdToLoad = post.getUserId();
             }
+            
+            // Charger les informations de profil de l'utilisateur
+            loadUserProfileIcon(userIdToLoad, profileImageView);
             
             if (post.isReply() && replyingToLayout != null) {
                 replyingToLayout.setVisibility(View.VISIBLE);
@@ -179,5 +231,56 @@ public class PostAdapter extends RecyclerView.Adapter<PostAdapter.PostViewHolder
                 retweetIcon.setColorFilter(itemView.getContext().getResources().getColor(R.color.twitter_dark_gray));
             }
         }
+    }
+    
+    /**
+     * Charge l'icône de profil d'un utilisateur à partir de Firebase
+     * @param userId L'ID de l'utilisateur
+     * @param imageView La vue d'image à mettre à jour
+     */
+    private void loadUserProfileIcon(String userId, CircleImageView imageView) {
+        if (userId == null || userId.isEmpty()) {
+            // Si l'ID utilisateur est invalide, utiliser l'icône par défaut
+            imageView.setImageResource(R.drawable.ic_profile_person);
+            return;
+        }
+        
+        usersRef.child(userId).addListenerForSingleValueEvent(new ValueEventListener() {
+            @Override
+            public void onDataChange(@NonNull DataSnapshot snapshot) {
+                if (snapshot.exists()) {
+                    try {
+                        // Récupérer les index d'icône et de couleur
+                        Integer iconIndex = snapshot.child("profileIconIndex").getValue(Integer.class);
+                        Integer colorIndex = snapshot.child("profileColorIndex").getValue(Integer.class);
+                        
+                        if (iconIndex != null && colorIndex != null) {
+                            Context context = imageView.getContext();
+                            // Obtenir l'icône colorée
+                            Drawable coloredIcon = ProfileIconHelper.getColoredProfileIcon(
+                                    context, iconIndex, colorIndex);
+                            
+                            // Mettre à jour l'image de profil
+                            imageView.setImageDrawable(coloredIcon);
+                        } else {
+                            // Utiliser l'icône par défaut si les index sont null
+                            imageView.setImageResource(R.drawable.ic_profile_person);
+                        }
+                    } catch (Exception e) {
+                        // En cas d'erreur, utiliser l'icône par défaut
+                        imageView.setImageResource(R.drawable.ic_profile_person);
+                    }
+                } else {
+                    // Si l'utilisateur n'existe pas, utiliser l'icône par défaut
+                    imageView.setImageResource(R.drawable.ic_profile_person);
+                }
+            }
+            
+            @Override
+            public void onCancelled(@NonNull DatabaseError error) {
+                // En cas d'erreur, utiliser l'icône par défaut
+                imageView.setImageResource(R.drawable.ic_profile_person);
+            }
+        });
     }
 } 

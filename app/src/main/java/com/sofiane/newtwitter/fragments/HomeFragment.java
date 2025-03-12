@@ -26,6 +26,7 @@ import com.sofiane.newtwitter.adapter.PostAdapter;
 import com.sofiane.newtwitter.databinding.FragmentHomeBinding;
 import com.sofiane.newtwitter.model.Post;
 import com.sofiane.newtwitter.viewmodel.PostViewModel;
+import de.hdodenhof.circleimageview.CircleImageView;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -319,6 +320,24 @@ public class HomeFragment extends Fragment implements PostAdapter.OnPostInteract
         } catch (Exception e) {
             Log.e(TAG, "Error replying to post: " + e.getMessage(), e);
             Toast.makeText(requireContext(), "Error replying to post", Toast.LENGTH_SHORT).show();
+        }
+    }
+
+    @Override
+    public void onUserProfileClicked(String userId) {
+        try {
+            if (userId == null || userId.isEmpty()) {
+                Toast.makeText(requireContext(), "ID utilisateur invalide", Toast.LENGTH_SHORT).show();
+                return;
+            }
+            
+            Log.d(TAG, "Navigation vers le profil utilisateur: " + userId);
+            Bundle args = new Bundle();
+            args.putString("userId", userId);
+            Navigation.findNavController(requireView()).navigate(R.id.action_homeFragment_to_profileFragment, args);
+        } catch (Exception e) {
+            Log.e(TAG, "Erreur lors de la navigation vers le profil: " + e.getMessage(), e);
+            Toast.makeText(requireContext(), "Erreur lors de la navigation vers le profil", Toast.LENGTH_SHORT).show();
         }
     }
 
