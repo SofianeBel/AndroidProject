@@ -12,14 +12,18 @@ import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.fragment.app.Fragment;
+import androidx.lifecycle.ViewModelProvider;
+import androidx.navigation.Navigation;
 
 import com.google.firebase.auth.FirebaseAuth;
-import com.google.firebase.firestore.FirebaseFirestore;
+import com.google.firebase.database.DatabaseReference;
+import com.google.firebase.database.FirebaseDatabase;
 import com.google.firebase.storage.FirebaseStorage;
 import com.google.firebase.storage.StorageReference;
 import com.sofiane.newtwitter.R;
 import com.sofiane.newtwitter.databinding.FragmentCreatePostBinding;
 import com.sofiane.newtwitter.model.Post;
+import com.sofiane.newtwitter.viewmodel.PostViewModel;
 
 import java.util.Date;
 import java.util.UUID;
@@ -28,9 +32,11 @@ public class CreatePostFragment extends Fragment {
     
     private FragmentCreatePostBinding binding;
     private FirebaseAuth auth;
-    private FirebaseFirestore db;
+    private FirebaseDatabase database;
+    private DatabaseReference postsRef;
     private FirebaseStorage storage;
     private Uri selectedImageUri = null;
+    private PostViewModel postViewModel;
     
     private final ActivityResultLauncher<String> getContent = registerForActivityResult(
             new ActivityResultContracts.GetContent(),
@@ -53,8 +59,21 @@ public class CreatePostFragment extends Fragment {
         super.onViewCreated(view, savedInstanceState);
         
         auth = FirebaseAuth.getInstance();
-        db = FirebaseFirestore.getInstance();
+        database = FirebaseDatabase.getInstance();
+        postsRef = database.getReference("posts");
         storage = FirebaseStorage.getInstance();
+        
+        // Initialize ViewModel
+        postViewModel = new ViewModelProvider(requireActivity()).get(PostViewModel.class);
+        
+        // Observe error messages
+        postViewModel.getErrorMessage().observe(getViewLifecycleOwner(), errorMessage -> {
+            if (errorMessage != null && !errorMessage.isEmpty()) {
+                Toast.makeText(requireContext(), errorMessage, Toast.LENGTH_SHORT).show();
+                binding.postProgress.setVisibility(View.GONE);
+                binding.postButton.setEnabled(true);
+            }
+        });
         
         setupClickListeners();
     }
@@ -85,18 +104,18 @@ public class CreatePostFragment extends Fragment {
         binding.postProgress.setVisibility(View.VISIBLE);
         binding.postButton.setEnabled(false);
         
-        String userId = auth.getCurrentUser().getUid();
-        String username = auth.getCurrentUser().getDisplayName();
-        String postId = UUID.randomUUID().toString();
-        
         if (selectedImageUri != null) {
             // Upload image first
+            String postId = UUID.randomUUID().toString();
             StorageReference storageRef = storage.getReference().child("post_images/" + postId);
             storageRef.putFile(selectedImageUri)
                     .addOnSuccessListener(taskSnapshot -> 
-                        storageRef.getDownloadUrl().addOnSuccessListener(downloadUri -> 
-                            savePostToFirestore(postId, userId, username, content, downloadUri.toString())
-                        )
+                        storageRef.getDownloadUrl().addOnSuccessListener(downloadUri -> {
+                            // Create post with image URL
+                            createPostWithImage(content, downloadUri.toString());
+                            clearForm();
+                            navigateBack();
+                        })
                     )
                     .addOnFailureListener(e -> {
                         binding.postProgress.setVisibility(View.GONE);
@@ -104,36 +123,55 @@ public class CreatePostFragment extends Fragment {
                         Toast.makeText(requireContext(), getString(R.string.failed_to_upload_image, e.getMessage()), Toast.LENGTH_SHORT).show();
                     });
         } else {
-            // No image to upload
-            savePostToFirestore(postId, userId, username, content, null);
+            // No image to upload, create post directly
+            postViewModel.createPost(content);
+            binding.postProgress.setVisibility(View.GONE);
+            binding.postButton.setEnabled(true);
+            Toast.makeText(requireContext(), getString(R.string.post_created_successfully), Toast.LENGTH_SHORT).show();
+            clearForm();
+            navigateBack();
         }
     }
     
-    private void savePostToFirestore(String postId, String userId, String username, String content, String imageUrl) {
+    private void createPostWithImage(String content, String imageUrl) {
+        String userId = auth.getCurrentUser().getUid();
+        String username = auth.getCurrentUser().getDisplayName();
+        if (username == null || username.isEmpty()) {
+            username = "User" + userId.substring(0, 5);
+        }
+        
+        // Generate a unique key for the new post
+        String postId = postsRef.push().getKey();
+        if (postId == null) {
+            Toast.makeText(requireContext(), "Failed to create post ID", Toast.LENGTH_SHORT).show();
+            binding.postProgress.setVisibility(View.GONE);
+            binding.postButton.setEnabled(true);
+            return;
+        }
+        
+        // Create post object
         Post post = new Post(
-                postId,
-                userId,
-                username,
-                content,
-                imageUrl,
-                new Date(),
-                0
+            postId,
+            userId,
+            username,
+            content,
+            imageUrl,
+            new Date(),
+            0 // Initial like count
         );
         
-        db.collection("posts")
-                .document(postId)
-                .set(post)
-                .addOnSuccessListener(aVoid -> {
-                    binding.postProgress.setVisibility(View.GONE);
-                    binding.postButton.setEnabled(true);
-                    Toast.makeText(requireContext(), getString(R.string.post_created_successfully), Toast.LENGTH_SHORT).show();
-                    clearForm();
-                })
-                .addOnFailureListener(e -> {
-                    binding.postProgress.setVisibility(View.GONE);
-                    binding.postButton.setEnabled(true);
-                    Toast.makeText(requireContext(), getString(R.string.failed_to_create_post, e.getMessage()), Toast.LENGTH_SHORT).show();
-                });
+        // Save post to Firebase
+        postsRef.child(postId).setValue(post)
+            .addOnSuccessListener(aVoid -> {
+                binding.postProgress.setVisibility(View.GONE);
+                binding.postButton.setEnabled(true);
+                Toast.makeText(requireContext(), getString(R.string.post_created_successfully), Toast.LENGTH_SHORT).show();
+            })
+            .addOnFailureListener(e -> {
+                binding.postProgress.setVisibility(View.GONE);
+                binding.postButton.setEnabled(true);
+                Toast.makeText(requireContext(), getString(R.string.failed_to_create_post, e.getMessage()), Toast.LENGTH_SHORT).show();
+            });
     }
     
     private void clearForm() {
@@ -141,6 +179,10 @@ public class CreatePostFragment extends Fragment {
         binding.postImagePreview.setImageURI(null);
         binding.postImagePreview.setVisibility(View.GONE);
         selectedImageUri = null;
+    }
+    
+    private void navigateBack() {
+        Navigation.findNavController(requireView()).navigateUp();
     }
     
     @Override

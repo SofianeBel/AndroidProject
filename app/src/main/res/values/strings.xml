@@ -11,4 +11,13 @@
     <string name="post_created_successfully">Post created successfully</string>
     <string name="failed_to_create_post">Failed to create post: %1$s</string>
     <string name="failed_to_upload_image">Failed to upload image: %1$s</string>
+    
+    <!-- Home Fragment -->
+    <string name="home_feed">Home Feed</string>
+    <string name="no_posts_available">No posts available</string>
+    <string name="error_loading_posts">Error loading posts</string>
+    <string name="like">Like</string>
+    <string name="comment">Comment</string>
+    <string name="create_post">Create Post</string>
+    <string name="pull_to_refresh">Pull to refresh</string>
 </resources>

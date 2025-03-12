@@ -1,66 +1,119 @@
 <?xml version="1.0" encoding="utf-8"?>
 <com.google.android.material.card.MaterialCardView xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
-    android:layout_marginHorizontal="8dp"
-    android:layout_marginVertical="4dp"
+    android:layout_marginHorizontal="4dp"
+    android:layout_marginVertical="2dp"
     app:cardCornerRadius="8dp"
-    app:cardElevation="2dp">
+    app:cardElevation="1dp">
 
     <androidx.constraintlayout.widget.ConstraintLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:padding="16dp">
+        android:padding="12dp">
+
+        <de.hdodenhof.circleimageview.CircleImageView
+            android:id="@+id/profileImageView"
+            android:layout_width="48dp"
+            android:layout_height="48dp"
+            android:src="@drawable/ic_person"
+            android:contentDescription="@string/app_name"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toTopOf="parent" />
 
         <TextView
             android:id="@+id/usernameTextView"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
+            android:layout_marginStart="12dp"
             android:textStyle="bold"
             android:textSize="16sp"
-            app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toTopOf="parent"/>
+            app:layout_constraintStart_toEndOf="@id/profileImageView"
+            app:layout_constraintTop_toTopOf="@id/profileImageView"
+            tools:text="@string/app_name" />
 
         <TextView
             android:id="@+id/timeTextView"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:textSize="12sp"
+            android:layout_marginStart="8dp"
+            android:textSize="14sp"
             android:textColor="@android:color/darker_gray"
-            app:layout_constraintEnd_toEndOf="parent"
-            app:layout_constraintTop_toTopOf="parent"/>
+            app:layout_constraintStart_toEndOf="@id/usernameTextView"
+            app:layout_constraintTop_toTopOf="@id/usernameTextView"
+            app:layout_constraintBottom_toBottomOf="@id/usernameTextView"
+            tools:text="2h ago" />
 
         <TextView
             android:id="@+id/contentTextView"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="4dp"
+            android:textSize="15sp"
+            android:lineSpacingExtra="4dp"
+            app:layout_constraintStart_toStartOf="@id/usernameTextView"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintTop_toBottomOf="@id/usernameTextView"
+            tools:text="This is a sample post content that could be quite long and span multiple lines to demonstrate how the layout handles longer text." />
+
+        <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="8dp"
-            android:textSize="14sp"
-            app:layout_constraintTop_toBottomOf="@id/usernameTextView"/>
+            android:orientation="horizontal"
+            app:layout_constraintTop_toBottomOf="@id/contentTextView">
 
-        <com.google.android.material.button.MaterialButton
-            android:id="@+id/likeButton"
-            style="@style/Widget.MaterialComponents.Button.TextButton"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="8dp"
-            android:text="Like"
-            android:textColor="@android:color/darker_gray"
-            app:icon="@android:drawable/star_big_off"
-            app:iconTint="@android:color/darker_gray"
-            app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toBottomOf="@id/contentTextView"/>
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/likeButton"
+                style="@style/Widget.MaterialComponents.Button.TextButton.Icon"
+                android:layout_width="wrap_content"
+                android:layout_height="36dp"
+                android:layout_marginEnd="8dp"
+                android:minWidth="0dp"
+                android:paddingHorizontal="8dp"
+                android:text="@string/like"
+                android:textColor="@android:color/darker_gray"
+                android:textSize="12sp"
+                app:icon="@android:drawable/star_big_off"
+                app:iconSize="16dp"
+                app:iconTint="@android:color/darker_gray" />
 
-        <TextView
-            android:id="@+id/likeCountTextView"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:textSize="14sp"
-            android:textColor="@android:color/darker_gray"
-            app:layout_constraintStart_toEndOf="@id/likeButton"
-            app:layout_constraintTop_toTopOf="@id/likeButton"
-            app:layout_constraintBottom_toBottomOf="@id/likeButton"/>
+            <TextView
+                android:id="@+id/likeCountTextView"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_gravity="center_vertical"
+                android:textSize="12sp"
+                android:textColor="@android:color/darker_gray"
+                tools:text="42" />
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/commentButton"
+                style="@style/Widget.MaterialComponents.Button.TextButton.Icon"
+                android:layout_width="wrap_content"
+                android:layout_height="36dp"
+                android:layout_marginStart="16dp"
+                android:minWidth="0dp"
+                android:paddingHorizontal="8dp"
+                android:text="@string/comment"
+                android:textColor="@android:color/darker_gray"
+                android:textSize="12sp"
+                app:icon="@android:drawable/ic_dialog_email"
+                app:iconSize="16dp"
+                app:iconTint="@android:color/darker_gray" />
+
+            <TextView
+                android:id="@+id/commentCountTextView"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_gravity="center_vertical"
+                android:textSize="12sp"
+                android:textColor="@android:color/darker_gray"
+                tools:text="5" />
+
+        </LinearLayout>
 
     </androidx.constraintlayout.widget.ConstraintLayout>
 

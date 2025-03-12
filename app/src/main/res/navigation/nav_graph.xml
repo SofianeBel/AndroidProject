@@ -19,4 +19,9 @@
         android:name="com.sofiane.newtwitter.fragments.SettingsFragment"
         android:label="Settings" />
 
+    <fragment
+        android:id="@+id/navigation_create_post"
+        android:name="com.sofiane.newtwitter.fragments.CreatePostFragment"
+        android:label="Create Post" />
+
 </navigation> 
