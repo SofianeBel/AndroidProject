@@ -1,0 +1,14 @@
+<resources>
+    <string name="app_name">H3 Project</string>
+    <!-- Create Post Fragment -->
+    <string name="create_new_post">Create New Post</string>
+    <string name="whats_on_your_mind">What\'s on your mind?</string>
+    <string name="post_image_preview">Post image preview</string>
+    <string name="add_image">Add Image</string>
+    <string name="post">Post</string>
+    <string name="please_write_something">Please write something to post</string>
+    <string name="must_be_logged_in">You must be logged in to post</string>
+    <string name="post_created_successfully">Post created successfully</string>
+    <string name="failed_to_create_post">Failed to create post: %1$s</string>
+    <string name="failed_to_upload_image">Failed to upload image: %1$s</string>
+</resources>
