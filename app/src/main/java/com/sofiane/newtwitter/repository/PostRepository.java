@@ -95,8 +95,13 @@ public class PostRepository {
                                 
                                 Post post = postSnapshot.getValue(Post.class);
                                 if (post != null) {
-                                    posts.add(post); // Add to list
-                                    Log.d(TAG, "Loaded post: " + post.getId() + ", content: " + post.getContent());
+                                    // Filtrer les retweets et les réponses pour qu'ils n'apparaissent pas dans le fil d'actualité
+                                    if (!post.isRetweet() && !post.isReply()) {
+                                        posts.add(post); // Add to list only if it's not a retweet or reply
+                                        Log.d(TAG, "Loaded post: " + post.getId() + ", content: " + post.getContent());
+                                    } else {
+                                        Log.d(TAG, "Skipped retweet/reply post: " + post.getId());
+                                    }
                                 } else {
                                     Log.w(TAG, "Failed to parse post from: " + postSnapshot.getKey());
                                 }
@@ -630,6 +635,60 @@ public class PostRepository {
         } catch (Exception e) {
             Log.e(TAG, "Error retweeting post: " + e.getMessage(), e);
             errorMessageLiveData.setValue("Error retweeting post: " + e.getMessage());
+        }
+    }
+
+    // Méthode pour charger spécifiquement les retweets et les réponses
+    public void loadRetweetsAndReplies() {
+        try {
+            Log.d(TAG, "Starting to load retweets and replies from Firebase");
+            Query query = postsRef;
+            
+            query.addValueEventListener(new ValueEventListener() {
+                @Override
+                public void onDataChange(@NonNull DataSnapshot dataSnapshot) {
+                    try {
+                        List<Post> posts = new ArrayList<>();
+                        Log.d(TAG, "onDataChange called for retweets and replies, snapshot has " + dataSnapshot.getChildrenCount() + " children");
+                        
+                        // Loop through all posts
+                        for (DataSnapshot postSnapshot : dataSnapshot.getChildren()) {
+                            try {
+                                Post post = postSnapshot.getValue(Post.class);
+                                if (post != null) {
+                                    // Ne garder que les retweets et les réponses
+                                    if (post.isRetweet() || post.isReply()) {
+                                        posts.add(post);
+                                        Log.d(TAG, "Loaded retweet/reply: " + post.getId() + ", content: " + post.getContent());
+                                    }
+                                }
+                            } catch (Exception e) {
+                                Log.e(TAG, "Error parsing retweet/reply: " + e.getMessage(), e);
+                            }
+                        }
+                        
+                        // Trier les posts par date (du plus récent au plus ancien)
+                        posts.sort((p1, p2) -> p2.getCreatedAt().compareTo(p1.getCreatedAt()));
+                        
+                        // Mettre à jour une LiveData spécifique pour les retweets et réponses si nécessaire
+                        // Pour l'instant, nous n'avons pas créé cette LiveData, mais on pourrait l'ajouter
+                        // retweetsAndRepliesLiveData.setValue(posts);
+                        
+                        Log.d(TAG, "Loaded " + posts.size() + " retweets and replies from Firebase");
+                    } catch (Exception e) {
+                        Log.e(TAG, "Error processing retweets and replies: " + e.getMessage(), e);
+                    }
+                }
+
+                @Override
+                public void onCancelled(@NonNull DatabaseError databaseError) {
+                    Log.e(TAG, "Error loading retweets and replies: " + databaseError.getMessage());
+                    errorMessageLiveData.setValue("Error loading retweets and replies: " + databaseError.getMessage());
+                }
+            });
+        } catch (Exception e) {
+            Log.e(TAG, "Error setting up retweets and replies listener: " + e.getMessage(), e);
+            errorMessageLiveData.setValue("Error setting up retweets and replies listener: " + e.getMessage());
         }
     }
 } 
