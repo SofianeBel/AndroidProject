@@ -1,5 +1,6 @@
 package com.sofiane.newtwitter.fragments;
 
+import android.content.Intent;
 import android.os.Bundle;
 import android.os.Handler;
 import android.util.Log;
@@ -61,6 +62,9 @@ public class HomeFragment extends Fragment implements PostAdapter.OnPostInteract
             // Initialize ViewModel
             postViewModel = new ViewModelProvider(requireActivity()).get(PostViewModel.class);
             
+            // Initialize Toolbar
+            setupToolbar();
+            
             // Initialize RecyclerView and adapter
             setupRecyclerView();
             
@@ -81,6 +85,25 @@ public class HomeFragment extends Fragment implements PostAdapter.OnPostInteract
         } catch (Exception e) {
             Log.e(TAG, "Error in onViewCreated: " + e.getMessage(), e);
             Toast.makeText(requireContext(), "Error initializing home feed: " + e.getMessage(), Toast.LENGTH_SHORT).show();
+        }
+    }
+    
+    private void setupToolbar() {
+        try {
+            // Set profile image in header
+            FirebaseUser currentUser = FirebaseAuth.getInstance().getCurrentUser();
+            if (currentUser != null) {
+                // Si l'utilisateur a une photo de profil, on pourrait la charger ici
+                // Pour l'instant, on utilise l'icône par défaut
+            }
+            
+            // Configurer le logo
+            binding.logoImageView.setOnClickListener(v -> {
+                // Scroll to top when logo is clicked
+                binding.postsRecyclerView.smoothScrollToPosition(0);
+            });
+        } catch (Exception e) {
+            Log.e(TAG, "Error setting up toolbar: " + e.getMessage(), e);
         }
     }
     
@@ -216,6 +239,7 @@ public class HomeFragment extends Fragment implements PostAdapter.OnPostInteract
     public void onPostLiked(Post post) {
         try {
             postViewModel.likePost(post.getId());
+            Toast.makeText(requireContext(), "Post liked", Toast.LENGTH_SHORT).show();
         } catch (Exception e) {
             Log.e(TAG, "Error liking post: " + e.getMessage(), e);
             Toast.makeText(requireContext(), "Error liking post", Toast.LENGTH_SHORT).show();
@@ -230,6 +254,32 @@ public class HomeFragment extends Fragment implements PostAdapter.OnPostInteract
             // Dans une future version, nous pourrions naviguer vers un écran de détail du post
         } catch (Exception e) {
             Log.e(TAG, "Error handling post click: " + e.getMessage(), e);
+        }
+    }
+
+    @Override
+    public void onPostRetweeted(Post post) {
+        try {
+            // Simuler un retweet
+            Toast.makeText(requireContext(), "Post retweeted", Toast.LENGTH_SHORT).show();
+            // Dans une future version, nous pourrions implémenter la fonctionnalité de retweet
+        } catch (Exception e) {
+            Log.e(TAG, "Error retweeting post: " + e.getMessage(), e);
+            Toast.makeText(requireContext(), "Error retweeting post", Toast.LENGTH_SHORT).show();
+        }
+    }
+    
+    @Override
+    public void onPostShared(Post post) {
+        try {
+            // Créer une intention de partage
+            Intent shareIntent = new Intent(Intent.ACTION_SEND);
+            shareIntent.setType("text/plain");
+            shareIntent.putExtra(Intent.EXTRA_TEXT, post.getUsername() + ": " + post.getContent());
+            startActivity(Intent.createChooser(shareIntent, "Share via"));
+        } catch (Exception e) {
+            Log.e(TAG, "Error sharing post: " + e.getMessage(), e);
+            Toast.makeText(requireContext(), "Error sharing post", Toast.LENGTH_SHORT).show();
         }
     }
 
