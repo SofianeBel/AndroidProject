@@ -53,4 +53,12 @@
     <string name="unfollow_success">Vous ne suivez plus cet utilisateur</string>
     <string name="follow_error">Erreur lors de l\'abonnement</string>
     <string name="unfollow_error">Erreur lors du désabonnement</string>
+    
+    <!-- Nouvelles chaînes pour les listes d'abonnés et d'abonnements -->
+    <string name="followers_list">Abonnés de %s</string>
+    <string name="following_list">Abonnements de %s</string>
+    <string name="no_followers">Aucun abonné</string>
+    <string name="no_following">Aucun abonnement</string>
+    <string name="loading_users">Chargement des utilisateurs...</string>
+    <string name="error_loading_users">Erreur lors du chargement des utilisateurs</string>
 </resources>

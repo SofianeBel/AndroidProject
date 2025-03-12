@@ -4,6 +4,11 @@ Une application Android de microblogging inspirée de Twitter, permettant aux ut
 
 ## Fonctionnalités
 
+### Version 1.3.0
+- **Listes d'abonnés et d'abonnements** : Visualisation des utilisateurs qui suivent ou sont suivis
+- **Navigation améliorée** : Accès direct aux profils depuis les listes d'abonnés/abonnements
+- **Interface utilisateur interactive** : Possibilité de suivre/ne plus suivre directement depuis les listes
+
 ### Version 1.2.0
 - **Système de suivi** : Suivre/ne plus suivre d'autres utilisateurs
 - **Compteurs de followers et following** : Affichage du nombre d'abonnés et d'abonnements
@@ -128,4 +133,4 @@ Si le problème persiste, vérifiez les logs de l'application pour identifier d'
 
 ## Version
 
-Version actuelle : 1.2.0 
+Version actuelle : 1.3.0 

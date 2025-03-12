@@ -29,6 +29,9 @@
         <action
             android:id="@+id/action_profileFragment_to_postDetailFragment"
             app:destination="@id/navigation_post_detail" />
+        <action
+            android:id="@+id/action_profileFragment_to_followListFragment"
+            app:destination="@id/navigation_follow_list" />
         <argument
             android:name="userId"
             app:argType="string"
@@ -69,6 +72,21 @@
             app:destination="@id/navigation_post_detail" />
         <action
             android:id="@+id/action_postDetailFragment_to_profileFragment"
+            app:destination="@id/navigation_profile" />
+    </fragment>
+
+    <fragment
+        android:id="@+id/navigation_follow_list"
+        android:name="com.sofiane.newtwitter.fragments.FollowListFragment"
+        android:label="Follow List">
+        <argument
+            android:name="userId"
+            app:argType="string" />
+        <argument
+            android:name="listType"
+            app:argType="integer" />
+        <action
+            android:id="@+id/action_followListFragment_to_profileFragment"
             app:destination="@id/navigation_profile" />
     </fragment>
 

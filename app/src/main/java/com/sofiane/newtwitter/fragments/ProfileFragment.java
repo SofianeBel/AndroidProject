@@ -100,6 +100,21 @@ public class ProfileFragment extends Fragment implements PostAdapter.OnPostInter
         // Show/hide edit button based on whose profile we're viewing
         binding.editProfileButton.setVisibility(isCurrentUserProfile ? View.VISIBLE : View.GONE);
         binding.followButton.setVisibility(isCurrentUserProfile ? View.GONE : View.VISIBLE);
+        
+        // Set up followers and following click listeners
+        binding.followersCount.setOnClickListener(v -> {
+            Bundle args = new Bundle();
+            args.putString("userId", userId);
+            args.putInt("listType", FollowListFragment.TYPE_FOLLOWERS);
+            Navigation.findNavController(v).navigate(R.id.action_profileFragment_to_followListFragment, args);
+        });
+        
+        binding.followingCount.setOnClickListener(v -> {
+            Bundle args = new Bundle();
+            args.putString("userId", userId);
+            args.putInt("listType", FollowListFragment.TYPE_FOLLOWING);
+            Navigation.findNavController(v).navigate(R.id.action_profileFragment_to_followListFragment, args);
+        });
 
         // Load user profile and posts
         loadUserProfile();
