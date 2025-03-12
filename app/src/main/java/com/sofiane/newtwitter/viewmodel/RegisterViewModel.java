@@ -9,6 +9,7 @@ import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
 import com.google.firebase.auth.UserProfileChangeRequest;
 import com.google.firebase.firestore.FirebaseFirestore;
+import com.google.firebase.database.FirebaseDatabase;
 
 public class RegisterViewModel extends ViewModel {
     private static final String TAG = "RegisterViewModel";
@@ -57,28 +58,36 @@ public class RegisterViewModel extends ViewModel {
                                 .addOnSuccessListener(documentReference -> {
                                     Log.d(TAG, "User document created in Firestore");
                                     
-                                    // Déconnecter l'utilisateur pour qu'il doive se connecter explicitement
-                                    auth.signOut();
-                                    Log.d(TAG, "User signed out after registration");
-                                    
-                                    // Marquer l'inscription comme réussie
-                                    registrationSuccessful = true;
-                                    lastRegisteredUser = user;
-                                    
-                                    // Mettre à jour le LiveData avec les informations utilisateur
-                                    // Utiliser setValue au lieu de postValue pour une mise à jour immédiate
-                                    currentUser.setValue(user);
-                                    Log.d(TAG, "currentUser LiveData updated with new user: " + user.getEmail());
-                                    
-                                    // Vérifier que le LiveData a bien été mis à jour
-                                    if (currentUser.getValue() == null) {
-                                        Log.e(TAG, "ERROR: currentUser LiveData is still null after setValue!");
-                                    } else {
-                                        Log.d(TAG, "CONFIRMED: currentUser LiveData contains: " + currentUser.getValue().getEmail());
-                                    }
-                                    
-                                    // Réinitialiser le message d'erreur
-                                    errorMessage.setValue(null);
+                                    // Ajouter également l'utilisateur à la Realtime Database
+                                    FirebaseDatabase database = FirebaseDatabase.getInstance("https://newtwitter-65ad1-default-rtdb.europe-west1.firebasedatabase.app");
+                                    database.getReference("users").child(firebaseUser.getUid()).setValue(user)
+                                        .addOnSuccessListener(aVoid -> {
+                                            Log.d(TAG, "User document created in Realtime Database");
+                                            
+                                            // Déconnecter l'utilisateur pour qu'il doive se connecter explicitement
+                                            auth.signOut();
+                                            Log.d(TAG, "User signed out after registration");
+                                            
+                                            // Marquer l'inscription comme réussie
+                                            registrationSuccessful = true;
+                                            lastRegisteredUser = user;
+                                            
+                                            // Mettre à jour le LiveData avec les informations utilisateur
+                                            // Utiliser setValue au lieu de postValue pour une mise à jour immédiate
+                                            currentUser.setValue(user);
+                                            Log.d(TAG, "currentUser LiveData updated with new user: " + user.getEmail());
+                                            
+                                            // Vérifier que le LiveData a bien été mis à jour
+                                            if (currentUser.getValue() == null) {
+                                                Log.e(TAG, "ERROR: currentUser LiveData is still null after setValue!");
+                                            } else {
+                                                Log.d(TAG, "CONFIRMED: currentUser LiveData contains: " + currentUser.getValue().getEmail());
+                                            }
+                                        })
+                                        .addOnFailureListener(e -> {
+                                            Log.e(TAG, "Error creating user in Realtime Database: " + e.getMessage());
+                                            errorMessage.setValue("Erreur lors de la création du profil: " + e.getMessage());
+                                        });
                                 })
                                 .addOnFailureListener(e -> {
                                     Log.e(TAG, "Failed to create user profile in Firestore: " + e.getMessage());
