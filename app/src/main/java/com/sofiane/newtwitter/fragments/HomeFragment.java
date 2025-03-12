@@ -257,11 +257,16 @@ public class HomeFragment extends Fragment implements PostAdapter.OnPostInteract
     @Override
     public void onPostClicked(Post post) {
         try {
-            // Pour l'instant, nous affichons simplement un toast
-            Toast.makeText(requireContext(), "Post clicked: " + post.getContent(), Toast.LENGTH_SHORT).show();
-            // Dans une future version, nous pourrions naviguer vers un écran de détail du post
+            Log.d(TAG, "Post clicked: " + post.getId());
+            
+            // Naviguer vers le fragment de détail du post
+            Bundle args = new Bundle();
+            args.putString("post_id", post.getId());
+            Navigation.findNavController(requireView()).navigate(R.id.action_navigation_home_to_postDetailFragment, args);
+            
         } catch (Exception e) {
-            Log.e(TAG, "Error handling post click: " + e.getMessage(), e);
+            Log.e(TAG, "Error navigating to post detail: " + e.getMessage(), e);
+            Toast.makeText(requireContext(), "Error opening post: " + e.getMessage(), Toast.LENGTH_SHORT).show();
         }
     }
 

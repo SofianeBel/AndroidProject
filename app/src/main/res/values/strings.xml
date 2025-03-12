@@ -32,4 +32,13 @@
     <string name="comment">Comment</string>
     <string name="create_post">Create Post</string>
     <string name="pull_to_refresh">Pull to refresh</string>
+    
+    <!-- Post Detail Fragment -->
+    <string name="post_detail">Post</string>
+    <string name="no_replies">Aucune réponse pour le moment</string>
+    <string name="replies">Réponses</string>
+    <string name="share">Partager</string>
+    <string name="likes_count">%1$d J\'aime</string>
+    <string name="retweets_count">%1$d Retweets</string>
+    <string name="replies_count">%1$d Réponses</string>
 </resources>
