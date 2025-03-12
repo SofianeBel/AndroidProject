@@ -32,7 +32,6 @@ import com.sofiane.newtwitter.viewmodel.FollowViewModel;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
 
 public class ProfileFragment extends Fragment implements PostAdapter.OnPostInteractionListener {
     private static final String TAG = "ProfileFragment";
@@ -180,55 +179,15 @@ public class ProfileFragment extends Fragment implements PostAdapter.OnPostInter
         binding.nameText.setText("Chargement...");
         binding.usernameText.setText("");
         binding.bioText.setText("");
-        
-        Log.d(TAG, "Loading user profile for userId: " + userId);
 
         usersRef.child(userId).addValueEventListener(new ValueEventListener() {
             @Override
             public void onDataChange(@NonNull DataSnapshot snapshot) {
-                Log.d(TAG, "User data snapshot received: " + snapshot.exists());
-                
-                if (snapshot.exists()) {
-                    try {
-                        User user = snapshot.getValue(User.class);
-                        if (user != null) {
-                            Log.d(TAG, "User data parsed successfully: " + user.getUsername());
-                            updateUI(user);
-                        } else {
-                            Log.e(TAG, "Failed to parse user data from snapshot");
-                            Toast.makeText(requireContext(), "Erreur lors du chargement du profil: données invalides", Toast.LENGTH_SHORT).show();
-                            
-                            // Afficher les données brutes pour le débogage
-                            Map<String, Object> rawData = (Map<String, Object>) snapshot.getValue();
-                            if (rawData != null) {
-                                Log.d(TAG, "Raw user data: " + rawData.toString());
-                            }
-                        }
-                    } catch (Exception e) {
-                        Log.e(TAG, "Exception parsing user data: " + e.getMessage(), e);
-                        Toast.makeText(requireContext(), "Erreur lors du chargement du profil: " + e.getMessage(), Toast.LENGTH_SHORT).show();
-                    }
+                User user = snapshot.getValue(User.class);
+                if (user != null) {
+                    updateUI(user);
                 } else {
-                    Log.e(TAG, "User profile not found in database");
                     Toast.makeText(requireContext(), "Profil utilisateur non trouvé", Toast.LENGTH_SHORT).show();
-                    
-                    // Si l'utilisateur est l'utilisateur courant, créer un profil de base
-                    if (currentUser != null && userId.equals(currentUser.getUid())) {
-                        Log.d(TAG, "Creating basic profile for current user");
-                        User newUser = new User(userId, 
-                            currentUser.getDisplayName() != null ? currentUser.getDisplayName() : "User", 
-                            currentUser.getEmail());
-                        
-                        usersRef.child(userId).setValue(newUser)
-                            .addOnSuccessListener(aVoid -> {
-                                Log.d(TAG, "Basic user profile created successfully");
-                                // Le listener sera déclenché à nouveau avec les nouvelles données
-                            })
-                            .addOnFailureListener(e -> {
-                                Log.e(TAG, "Failed to create basic user profile: " + e.getMessage());
-                                Toast.makeText(requireContext(), "Erreur lors de la création du profil: " + e.getMessage(), Toast.LENGTH_SHORT).show();
-                            });
-                    }
                 }
             }
 
@@ -244,59 +203,42 @@ public class ProfileFragment extends Fragment implements PostAdapter.OnPostInter
         Log.d(TAG, "Updating UI with user data: " + user.getUserId());
         
         // Set user info
-        String username = user.getUsername();
-        if (username != null && !username.isEmpty()) {
-            binding.nameText.setText(username);
-            binding.usernameText.setText("@" + username.toLowerCase().replace(" ", ""));
-        } else {
-            binding.nameText.setText("Utilisateur");
-            binding.usernameText.setText("@user");
-        }
+        binding.nameText.setText(user.getUsername());
+        binding.usernameText.setText("@" + user.getUsername().toLowerCase().replace(" ", ""));
         
         // Set bio if available
         if (user.getBio() != null && !user.getBio().isEmpty()) {
             binding.bioText.setText(user.getBio());
             binding.bioText.setVisibility(View.VISIBLE);
         } else {
-            binding.bioText.setText("Aucune biographie disponible");
-            binding.bioText.setVisibility(View.VISIBLE);
+            binding.bioText.setVisibility(View.GONE);
         }
 
         // Load profile image if available
         if (user.getProfileImageUrl() != null && !user.getProfileImageUrl().isEmpty()) {
+            Log.d(TAG, "Loading profile image: " + user.getProfileImageUrl());
             Glide.with(this)
                     .load(user.getProfileImageUrl())
                     .placeholder(R.drawable.ic_launcher_foreground)
                     .into(binding.profileImage);
-            Log.d(TAG, "Loading profile image: " + user.getProfileImageUrl());
         } else {
-            Log.d(TAG, "No profile image available, using placeholder");
-            binding.profileImage.setImageResource(R.drawable.ic_launcher_foreground);
+            Log.d(TAG, "No profile image URL available");
         }
 
         // Load banner image if available
         if (user.getBannerImageUrl() != null && !user.getBannerImageUrl().isEmpty()) {
+            Log.d(TAG, "Loading banner image: " + user.getBannerImageUrl());
             Glide.with(this)
                     .load(user.getBannerImageUrl())
                     .placeholder(android.R.color.holo_blue_light)
                     .into(binding.coverImage);
-            Log.d(TAG, "Loading banner image: " + user.getBannerImageUrl());
         } else {
-            Log.d(TAG, "No banner image available, using placeholder color");
-            binding.coverImage.setBackgroundColor(getResources().getColor(android.R.color.holo_blue_light));
+            Log.d(TAG, "No banner image URL available");
         }
         
         // Update follow counts
-        int followersCount = user.getFollowersCount();
-        int followingCount = user.getFollowingCount();
-        
-        Log.d(TAG, "Followers count: " + followersCount + ", Following count: " + followingCount);
-        
-        binding.followersCount.setText(followersCount + " " + getString(R.string.followers));
-        binding.followingCount.setText(followingCount + " " + getString(R.string.following));
-        
-        // Mettre à jour le compteur de tweets
-        loadUserPosts(); // Cette méthode mettra à jour le compteur de tweets
+        binding.followersCount.setText(user.getFollowersCount() + " " + getString(R.string.followers));
+        binding.followingCount.setText(user.getFollowingCount() + " " + getString(R.string.following));
     }
 
     private void loadUserPosts() {
@@ -306,6 +248,12 @@ public class ProfileFragment extends Fragment implements PostAdapter.OnPostInter
         query.addValueEventListener(new ValueEventListener() {
             @Override
             public void onDataChange(@NonNull DataSnapshot dataSnapshot) {
+                // Vérifier si le binding est toujours valide
+                if (binding == null) {
+                    Log.e(TAG, "Binding is null in loadUserPosts.onDataChange");
+                    return;
+                }
+                
                 userPosts.clear();
                 int postCount = 0;
                 
@@ -340,6 +288,11 @@ public class ProfileFragment extends Fragment implements PostAdapter.OnPostInter
 
             @Override
             public void onCancelled(@NonNull DatabaseError databaseError) {
+                if (binding == null) {
+                    Log.e(TAG, "Binding is null in loadUserPosts.onCancelled");
+                    return;
+                }
+                
                 Log.e(TAG, "Error loading user posts: " + databaseError.getMessage());
                 Toast.makeText(requireContext(), "Erreur lors du chargement des posts: " + databaseError.getMessage(), Toast.LENGTH_SHORT).show();
             }

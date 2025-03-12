@@ -8,7 +8,6 @@ import com.sofiane.newtwitter.model.User;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
 import com.google.firebase.auth.UserProfileChangeRequest;
-import com.google.firebase.database.FirebaseDatabase;
 
 public class LoginViewModel extends ViewModel {
     private static final String TAG = "LoginViewModel";
@@ -33,50 +32,47 @@ public class LoginViewModel extends ViewModel {
     }
 
     public void login(String email, String password) {
+        Log.d(TAG, "Attempting login for email: " + email);
+        
+        // Clear any previous error messages
         errorMessage.setValue(null);
         
-        auth.signInWithEmailAndPassword(email, password)
-            .addOnSuccessListener(authResult -> {
-                FirebaseUser firebaseUser = authResult.getUser();
-                if (firebaseUser != null) {
-                    // Vérifier si l'utilisateur existe dans la Realtime Database
-                    FirebaseDatabase database = FirebaseDatabase.getInstance("https://newtwitter-65ad1-default-rtdb.europe-west1.firebasedatabase.app");
-                    database.getReference("users").child(firebaseUser.getUid()).get()
-                        .addOnSuccessListener(dataSnapshot -> {
-                            if (dataSnapshot.exists()) {
-                                // L'utilisateur existe déjà dans la Realtime Database
-                                User user = dataSnapshot.getValue(User.class);
-                                currentUser.setValue(user);
-                            } else {
-                                // L'utilisateur n'existe pas dans la Realtime Database, le créer
-                                User user = new User(firebaseUser.getUid(), 
-                                    firebaseUser.getDisplayName() != null ? firebaseUser.getDisplayName() : "User", 
-                                    firebaseUser.getEmail());
-                                
-                                database.getReference("users").child(firebaseUser.getUid()).setValue(user)
-                                    .addOnSuccessListener(dbVoid -> {
-                                        currentUser.setValue(user);
-                                    })
-                                    .addOnFailureListener(e -> {
-                                        Log.e(TAG, "Failed to create user in Realtime Database: " + e.getMessage());
-                                        errorMessage.setValue("Failed to create user profile: " + e.getMessage());
-                                    });
-                            }
-                        })
-                        .addOnFailureListener(e -> {
-                            Log.e(TAG, "Failed to check user in Realtime Database: " + e.getMessage());
-                            // Créer quand même un objet User avec les données de base
-                            User user = new User(firebaseUser.getUid(), 
-                                firebaseUser.getDisplayName() != null ? firebaseUser.getDisplayName() : "User", 
-                                firebaseUser.getEmail());
-                            currentUser.setValue(user);
-                        });
-                }
-            })
-            .addOnFailureListener(e -> {
-                Log.e(TAG, "Login failed: " + e.getMessage());
-                errorMessage.setValue("Login failed: " + e.getMessage());
-            });
+        try {
+            auth.signInWithEmailAndPassword(email, password)
+                .addOnSuccessListener(authResult -> {
+                    Log.d(TAG, "Login successful");
+                    FirebaseUser firebaseUser = authResult.getUser();
+                    if (firebaseUser != null) {
+                        // Vérifier si l'utilisateur a un displayName
+                        String displayName = firebaseUser.getDisplayName();
+                        if (displayName == null || displayName.isEmpty()) {
+                            displayName = "User"; // Valeur par défaut
+                            Log.w(TAG, "User has no display name, using default");
+                        }
+                        
+                        User user = new User(
+                            firebaseUser.getUid(), 
+                            displayName, 
+                            firebaseUser.getEmail()
+                        );
+                        Log.d(TAG, "Setting user to LiveData: " + user.getEmail() + ", UID: " + user.getUserId());
+                        
+                        // Utiliser postValue pour éviter les problèmes de thread
+                        currentUser.postValue(user);
+                        Log.d(TAG, "User data set to LiveData");
+                    } else {
+                        Log.e(TAG, "FirebaseUser is null after successful login");
+                        errorMessage.postValue("Authentication error: User data not available");
+                    }
+                })
+                .addOnFailureListener(e -> {
+                    Log.e(TAG, "Login failed: " + e.getMessage(), e);
+                    errorMessage.postValue(e.getMessage());
+                });
+        } catch (Exception e) {
+            Log.e(TAG, "Exception during login process: " + e.getMessage(), e);
+            errorMessage.postValue("Login error: " + e.getMessage());
+        }
     }
 
     public void logout() {
@@ -107,7 +103,7 @@ public class LoginViewModel extends ViewModel {
                         .build();
 
                     firebaseUser.updateProfile(profileUpdates)
-                        .addOnSuccessListener(profileVoid -> {
+                        .addOnSuccessListener(aVoid -> {
                             Log.d(TAG, "Firebase user profile updated successfully");
                             // User created and profile updated successfully
                             User newUser = new User(firebaseUser.getUid(), username, email);
