@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Tableau des noms d'icônes de profil -->
+    <string-array name="profile_icon_names">
+        <item>Personne</item>
+        <item>Étoile</item>
+        <item>Cœur</item>
+        <item>Diamant</item>
+        <item>Cercle</item>
+        <item>Carré</item>
+    </string-array>
+
+    <!-- Tableau des couleurs de profil -->
+    <string-array name="profile_colors">
+        <item>Bleu</item>
+        <item>Rouge</item>
+        <item>Vert</item>
+        <item>Jaune</item>
+        <item>Violet</item>
+        <item>Orange</item>
+        <item>Rose</item>
+        <item>Turquoise</item>
+    </string-array>
+
+    <!-- Valeurs hexadécimales des couleurs -->
+    <array name="profile_color_values">
+        <item>#2196F3</item> <!-- Bleu -->
+        <item>#F44336</item> <!-- Rouge -->
+        <item>#4CAF50</item> <!-- Vert -->
+        <item>#FFEB3B</item> <!-- Jaune -->
+        <item>#9C27B0</item> <!-- Violet -->
+        <item>#FF9800</item> <!-- Orange -->
+        <item>#E91E63</item> <!-- Rose -->
+        <item>#00BCD4</item> <!-- Turquoise -->
+    </array>
+</resources> 

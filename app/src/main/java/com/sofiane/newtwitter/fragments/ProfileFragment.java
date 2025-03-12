@@ -1,5 +1,7 @@
 package com.sofiane.newtwitter.fragments;
 
+import android.graphics.Color;
+import android.graphics.drawable.Drawable;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.LayoutInflater;
@@ -9,6 +11,7 @@ import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+import androidx.core.content.ContextCompat;
 import androidx.fragment.app.Fragment;
 import androidx.lifecycle.ViewModelProvider;
 import androidx.navigation.Navigation;
@@ -28,6 +31,7 @@ import com.sofiane.newtwitter.adapter.PostAdapter;
 import com.sofiane.newtwitter.databinding.FragmentProfileBinding;
 import com.sofiane.newtwitter.model.Post;
 import com.sofiane.newtwitter.model.User;
+import com.sofiane.newtwitter.utils.ProfileIconHelper;
 import com.sofiane.newtwitter.viewmodel.FollowViewModel;
 
 import java.util.ArrayList;
@@ -176,17 +180,59 @@ public class ProfileFragment extends Fragment implements PostAdapter.OnPostInter
     }
 
     private void loadUserProfile() {
-        binding.nameText.setText("Chargement...");
+        // Réinitialiser les champs
+        binding.nameText.setText("");
         binding.usernameText.setText("");
         binding.bioText.setText("");
 
         usersRef.child(userId).addValueEventListener(new ValueEventListener() {
             @Override
             public void onDataChange(@NonNull DataSnapshot snapshot) {
-                User user = snapshot.getValue(User.class);
-                if (user != null) {
-                    updateUI(user);
+                // Vérifier si les données existent
+                if (snapshot.exists()) {
+                    try {
+                        User user = snapshot.getValue(User.class);
+                        if (user != null) {
+                            Log.d(TAG, "Profil utilisateur chargé avec succès: " + user.getUsername());
+                            updateUI(user);
+                            return; // Sortir de la méthode car tout est OK
+                        }
+                    } catch (Exception e) {
+                        Log.e(TAG, "Erreur lors de la conversion des données utilisateur: " + e.getMessage(), e);
+                        // Continuer pour créer un nouveau profil
+                    }
+                }
+                
+                // Si on arrive ici, c'est que les données n'existent pas ou sont invalides
+                Log.w(TAG, "Aucun profil utilisateur trouvé ou données invalides, création d'un nouveau profil");
+                
+                // Créer un profil utilisateur temporaire pour l'affichage
+                String displayName = "Utilisateur";
+                if (currentUser != null && userId.equals(currentUser.getUid())) {
+                    // Si c'est le profil de l'utilisateur actuel, on peut récupérer son nom depuis Firebase Auth
+                    if (currentUser.getDisplayName() != null && !currentUser.getDisplayName().isEmpty()) {
+                        displayName = currentUser.getDisplayName();
+                    }
+                    
+                    // Créer un nouveau profil utilisateur avec les valeurs par défaut
+                    User newUser = new User(
+                        userId,
+                        displayName,
+                        currentUser.getEmail()
+                    );
+                    
+                    // Sauvegarder ce nouveau profil dans la base de données
+                    usersRef.child(userId).setValue(newUser)
+                        .addOnSuccessListener(aVoid -> {
+                            Log.d(TAG, "Nouveau profil utilisateur créé et sauvegardé");
+                            // Le listener ValueEventListener sera déclenché à nouveau après la sauvegarde
+                        })
+                        .addOnFailureListener(e -> {
+                            Log.e(TAG, "Erreur lors de la sauvegarde du nouveau profil: " + e.getMessage(), e);
+                            Toast.makeText(requireContext(), "Erreur lors de la création du profil: " + e.getMessage(), Toast.LENGTH_SHORT).show();
+                        });
                 } else {
+                    // Si c'est le profil d'un autre utilisateur, afficher un message d'erreur
                     Toast.makeText(requireContext(), "Profil utilisateur non trouvé", Toast.LENGTH_SHORT).show();
                 }
             }
@@ -214,31 +260,51 @@ public class ProfileFragment extends Fragment implements PostAdapter.OnPostInter
             binding.bioText.setVisibility(View.GONE);
         }
 
-        // Load profile image if available
-        if (user.getProfileImageUrl() != null && !user.getProfileImageUrl().isEmpty()) {
-            Log.d(TAG, "Loading profile image: " + user.getProfileImageUrl());
-            Glide.with(this)
-                    .load(user.getProfileImageUrl())
-                    .placeholder(R.drawable.ic_launcher_foreground)
-                    .into(binding.profileImage);
-        } else {
-            Log.d(TAG, "No profile image URL available");
+        // Afficher l'icône de profil colorée
+        try {
+            Drawable coloredIcon = ProfileIconHelper.getColoredProfileIcon(
+                    requireContext(),
+                    user.getProfileIconIndex(),
+                    user.getProfileColorIndex()
+            );
+            binding.profileImage.setImageDrawable(coloredIcon);
+            Log.d(TAG, "Profile icon set with icon index: " + user.getProfileIconIndex() + 
+                    ", color index: " + user.getProfileColorIndex());
+        } catch (Exception e) {
+            Log.e(TAG, "Error setting profile icon: " + e.getMessage(), e);
+            // Fallback to default icon
+            binding.profileImage.setImageResource(R.drawable.ic_profile_person);
         }
 
-        // Load banner image if available
-        if (user.getBannerImageUrl() != null && !user.getBannerImageUrl().isEmpty()) {
-            Log.d(TAG, "Loading banner image: " + user.getBannerImageUrl());
-            Glide.with(this)
-                    .load(user.getBannerImageUrl())
-                    .placeholder(android.R.color.holo_blue_light)
-                    .into(binding.coverImage);
-        } else {
-            Log.d(TAG, "No banner image URL available");
+        // Définir une couleur de bannière basée sur la couleur de profil
+        try {
+            int bannerColor = ProfileIconHelper.getProfileColor(requireContext(), user.getProfileColorIndex());
+            // Utiliser une version plus claire de la couleur pour la bannière
+            int lighterColor = lightenColor(bannerColor, 0.3f);
+            binding.coverImage.setBackgroundColor(lighterColor);
+            Log.d(TAG, "Banner color set based on profile color index: " + user.getProfileColorIndex());
+        } catch (Exception e) {
+            Log.e(TAG, "Error setting banner color: " + e.getMessage(), e);
+            // Fallback to default color
+            binding.coverImage.setBackgroundColor(ContextCompat.getColor(requireContext(), android.R.color.holo_blue_light));
         }
         
         // Update follow counts
         binding.followersCount.setText(user.getFollowersCount() + " " + getString(R.string.followers));
         binding.followingCount.setText(user.getFollowingCount() + " " + getString(R.string.following));
+    }
+
+    /**
+     * Éclaircit une couleur en ajoutant du blanc
+     * @param color La couleur à éclaircir
+     * @param factor Le facteur d'éclaircissement (0.0 à 1.0)
+     * @return La couleur éclaircie
+     */
+    private int lightenColor(int color, float factor) {
+        int red = (int) ((Color.red(color) * (1 - factor) + 255 * factor));
+        int green = (int) ((Color.green(color) * (1 - factor) + 255 * factor));
+        int blue = (int) ((Color.blue(color) * (1 - factor) + 255 * factor));
+        return Color.rgb(red, green, blue);
     }
 
     private void loadUserPosts() {

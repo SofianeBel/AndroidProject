@@ -15,6 +15,8 @@ public class User {
     private Map<String, Boolean> following; // Map des utilisateurs que cet utilisateur suit
     private int followersCount; // Nombre de followers
     private int followingCount; // Nombre de suivis
+    private int profileIconIndex; // Index de l'icône de profil
+    private int profileColorIndex; // Index de la couleur de profil
 
     // Required empty constructor for Firestore
     public User() {
@@ -22,6 +24,8 @@ public class User {
         this.following = new HashMap<>();
         this.followersCount = 0;
         this.followingCount = 0;
+        this.profileIconIndex = 0; // Icône par défaut
+        this.profileColorIndex = 0; // Couleur par défaut
     }
 
     public User(String email) {
@@ -31,6 +35,8 @@ public class User {
         this.following = new HashMap<>();
         this.followersCount = 0;
         this.followingCount = 0;
+        this.profileIconIndex = 0;
+        this.profileColorIndex = 0;
     }
 
     public User(String userId, String username, String email) {
@@ -42,6 +48,8 @@ public class User {
         this.following = new HashMap<>();
         this.followersCount = 0;
         this.followingCount = 0;
+        this.profileIconIndex = 0;
+        this.profileColorIndex = 0;
     }
 
     public String getUserId() {
@@ -144,6 +152,23 @@ public class User {
     
     public void setFollowingCount(int followingCount) {
         this.followingCount = followingCount;
+    }
+    
+    // Getters and setters for profile icon and color
+    public int getProfileIconIndex() {
+        return profileIconIndex;
+    }
+    
+    public void setProfileIconIndex(int profileIconIndex) {
+        this.profileIconIndex = profileIconIndex;
+    }
+    
+    public int getProfileColorIndex() {
+        return profileColorIndex;
+    }
+    
+    public void setProfileColorIndex(int profileColorIndex) {
+        this.profileColorIndex = profileColorIndex;
     }
     
     // Helper methods for follow/unfollow operations

@@ -94,6 +94,46 @@
                 android:alpha="0.8" />
         </FrameLayout>
 
+        <!-- Sélecteur d'icône de profil -->
+        <TextView
+            android:id="@+id/profile_icon_label"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="16dp"
+            android:text="Icône de profil"
+            android:textSize="16sp"
+            android:textStyle="bold"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@+id/profile_image_container" />
+
+        <Spinner
+            android:id="@+id/profile_icon_spinner"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@+id/profile_icon_label" />
+
+        <!-- Sélecteur de couleur de profil -->
+        <TextView
+            android:id="@+id/profile_color_label"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="16dp"
+            android:text="Couleur de profil"
+            android:textSize="16sp"
+            android:textStyle="bold"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@+id/profile_icon_spinner" />
+
+        <Spinner
+            android:id="@+id/profile_color_spinner"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@+id/profile_color_label" />
+
         <com.google.android.material.textfield.TextInputLayout
             android:id="@+id/username_layout"
             style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
@@ -103,7 +143,7 @@
             android:hint="Nom d'utilisateur"
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toBottomOf="@+id/profile_image_container">
+            app:layout_constraintTop_toBottomOf="@+id/profile_color_spinner">
 
             <com.google.android.material.textfield.TextInputEditText
                 android:id="@+id/username_edit"

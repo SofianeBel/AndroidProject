@@ -9,6 +9,8 @@ import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.AdapterView;
+import android.widget.ArrayAdapter;
 import android.widget.Toast;
 
 import androidx.activity.result.ActivityResultLauncher;
@@ -36,6 +38,7 @@ import com.google.firebase.storage.UploadTask;
 import com.sofiane.newtwitter.R;
 import com.sofiane.newtwitter.databinding.FragmentEditProfileBinding;
 import com.sofiane.newtwitter.model.User;
+import com.sofiane.newtwitter.utils.ProfileIconHelper;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -47,7 +50,9 @@ import android.os.Build;
 import com.google.firebase.storage.StorageException;
 
 import android.graphics.Bitmap;
-import android.graphics.ByteArrayOutputStream;
+import android.graphics.drawable.Drawable;
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
 
 public class EditProfileFragment extends Fragment {
     private static final String TAG = "EditProfileFragment";
@@ -60,7 +65,13 @@ public class EditProfileFragment extends Fragment {
     private Uri selectedBannerImageUri = null;
     private User userProfile;
     private static final int PERMISSION_REQUEST_CODE = 1001;
+    
+    // Variables pour la sélection d'icône et de couleur
+    private int selectedIconIndex = 0;
+    private int selectedColorIndex = 0;
 
+    // Commenté car nous n'utilisons plus Firebase Storage pour les images
+    /*
     private final ActivityResultLauncher<String> getProfileImage = registerForActivityResult(
             new ActivityResultContracts.GetContent(),
             uri -> {
@@ -80,6 +91,7 @@ public class EditProfileFragment extends Fragment {
                     binding.changeBannerButton.setVisibility(View.GONE);
                 }
             });
+    */
 
     @Override
     public View onCreateView(@NonNull LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
@@ -91,15 +103,14 @@ public class EditProfileFragment extends Fragment {
     public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
         super.onViewCreated(view, savedInstanceState);
 
-        // Check permissions first
-        checkAndRequestPermissions();
-
         // Initialize Firebase
         auth = FirebaseAuth.getInstance();
         currentUser = auth.getCurrentUser();
         FirebaseDatabase database = FirebaseDatabase.getInstance("https://newtwitter-65ad1-default-rtdb.europe-west1.firebasedatabase.app");
         usersRef = database.getReference("users");
         
+        // Commenté car nous n'utilisons plus Firebase Storage pour les images
+        /*
         try {
             storageRef = FirebaseStorage.getInstance().getReference();
             Log.d(TAG, "Firebase Storage initialized successfully");
@@ -107,6 +118,7 @@ public class EditProfileFragment extends Fragment {
             Log.e(TAG, "Error initializing Firebase Storage: " + e.getMessage(), e);
             Toast.makeText(requireContext(), "Erreur d'initialisation du stockage: " + e.getMessage(), Toast.LENGTH_SHORT).show();
         }
+        */
 
         if (currentUser == null) {
             Toast.makeText(requireContext(), "Vous devez être connecté pour modifier votre profil", Toast.LENGTH_SHORT).show();
@@ -114,10 +126,12 @@ public class EditProfileFragment extends Fragment {
             return;
         }
 
-        // Load user data
-        loadUserProfile();
-
-        // Set up click listeners
+        // Initialiser les spinners pour les icônes et les couleurs
+        setupIconSpinner();
+        setupColorSpinner();
+        
+        // Commenté car nous n'utilisons plus Firebase Storage pour les images
+        /*
         binding.changeProfileImageButton.setOnClickListener(v -> {
             try {
                 getProfileImage.launch("image/*");
@@ -134,56 +148,77 @@ public class EditProfileFragment extends Fragment {
                 Toast.makeText(requireContext(), "Erreur lors de l'ouverture du sélecteur d'images: " + e.getMessage(), Toast.LENGTH_SHORT).show();
             }
         });
-        binding.saveProfileButton.setOnClickListener(v -> saveProfile());
-    }
+        */
+        
+        // Mettre à jour l'aperçu de l'icône lorsque l'utilisateur change l'icône ou la couleur
+        binding.profileIconSpinner.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
+            @Override
+            public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
+                selectedIconIndex = position;
+                updateProfileIconPreview();
+            }
 
-    private void checkAndRequestPermissions() {
-        List<String> permissionsNeeded = new ArrayList<>();
-        
-        if (Build.VERSION.SDK_INT <= Build.VERSION_CODES.S_V2) {
-            // For Android 12 (S) and below
-            if (ContextCompat.checkSelfPermission(requireContext(), Manifest.permission.READ_EXTERNAL_STORAGE) 
-                    != PackageManager.PERMISSION_GRANTED) {
-                permissionsNeeded.add(Manifest.permission.READ_EXTERNAL_STORAGE);
+            @Override
+            public void onNothingSelected(AdapterView<?> parent) {
+                // Ne rien faire
             }
-        } else {
-            // For Android 13+ (TIRAMISU)
-            if (ContextCompat.checkSelfPermission(requireContext(), Manifest.permission.READ_MEDIA_IMAGES) 
-                    != PackageManager.PERMISSION_GRANTED) {
-                permissionsNeeded.add(Manifest.permission.READ_MEDIA_IMAGES);
-            }
-        }
+        });
         
-        if (!permissionsNeeded.isEmpty()) {
-            Log.d(TAG, "Requesting permissions: " + permissionsNeeded);
-            requestPermissions(permissionsNeeded.toArray(new String[0]), PERMISSION_REQUEST_CODE);
-        } else {
-            Log.d(TAG, "All required permissions already granted");
-        }
+        binding.profileColorSpinner.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
+            @Override
+            public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
+                selectedColorIndex = position;
+                updateProfileIconPreview();
+            }
+
+            @Override
+            public void onNothingSelected(AdapterView<?> parent) {
+                // Ne rien faire
+            }
+        });
+        
+        binding.saveProfileButton.setOnClickListener(v -> saveProfile());
+
+        // Load user profile
+        loadUserProfile();
     }
     
-    @Override
-    public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
-        if (requestCode == PERMISSION_REQUEST_CODE) {
-            boolean allGranted = true;
-            for (int result : grantResults) {
-                if (result != PackageManager.PERMISSION_GRANTED) {
-                    allGranted = false;
-                    break;
-                }
-            }
-            
-            if (!allGranted) {
-                Log.w(TAG, "Some permissions were denied");
-                Toast.makeText(requireContext(), 
-                        "L'accès aux images est nécessaire pour modifier votre profil", 
-                        Toast.LENGTH_LONG).show();
-            } else {
-                Log.d(TAG, "All permissions granted");
-            }
-        } else {
-            super.onRequestPermissionsResult(requestCode, permissions, grantResults);
-        }
+    /**
+     * Configure le spinner pour les icônes de profil
+     */
+    private void setupIconSpinner() {
+        ArrayAdapter<CharSequence> adapter = ArrayAdapter.createFromResource(
+                requireContext(),
+                R.array.profile_icon_names,
+                android.R.layout.simple_spinner_item
+        );
+        adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
+        binding.profileIconSpinner.setAdapter(adapter);
+    }
+    
+    /**
+     * Configure le spinner pour les couleurs de profil
+     */
+    private void setupColorSpinner() {
+        ArrayAdapter<CharSequence> adapter = ArrayAdapter.createFromResource(
+                requireContext(),
+                R.array.profile_colors,
+                android.R.layout.simple_spinner_item
+        );
+        adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
+        binding.profileColorSpinner.setAdapter(adapter);
+    }
+    
+    /**
+     * Met à jour l'aperçu de l'icône de profil avec l'icône et la couleur sélectionnées
+     */
+    private void updateProfileIconPreview() {
+        Drawable coloredIcon = ProfileIconHelper.getColoredProfileIcon(
+                requireContext(),
+                selectedIconIndex,
+                selectedColorIndex
+        );
+        binding.profileImagePreview.setImageDrawable(coloredIcon);
     }
 
     private void loadUserProfile() {
@@ -193,33 +228,67 @@ public class EditProfileFragment extends Fragment {
             @Override
             public void onDataChange(@NonNull DataSnapshot snapshot) {
                 binding.progressBar.setVisibility(View.GONE);
-                userProfile = snapshot.getValue(User.class);
-
-                if (userProfile != null) {
-                    // Fill form with user data
-                    binding.usernameEdit.setText(userProfile.getUsername());
-                    binding.bioEdit.setText(userProfile.getBio());
-
-                    // Load profile image if exists
-                    if (userProfile.getProfileImageUrl() != null && !userProfile.getProfileImageUrl().isEmpty()) {
-                        Glide.with(requireContext())
-                                .load(userProfile.getProfileImageUrl())
-                                .placeholder(R.drawable.ic_launcher_foreground)
-                                .into(binding.profileImagePreview);
+                
+                // Vérifier si les données existent
+                if (snapshot.exists()) {
+                    try {
+                        userProfile = snapshot.getValue(User.class);
+                        
+                        // Vérifier si l'objet utilisateur est valide
+                        if (userProfile != null) {
+                            Log.d(TAG, "Profil utilisateur chargé avec succès: " + userProfile.getUsername());
+                            
+                            // Remplir le formulaire avec les données utilisateur
+                            binding.usernameEdit.setText(userProfile.getUsername());
+                            binding.bioEdit.setText(userProfile.getBio());
+                            
+                            // Définir les sélections d'icône et de couleur
+                            binding.profileIconSpinner.setSelection(userProfile.getProfileIconIndex());
+                            binding.profileColorSpinner.setSelection(userProfile.getProfileColorIndex());
+                            
+                            // Mettre à jour l'aperçu de l'icône
+                            selectedIconIndex = userProfile.getProfileIconIndex();
+                            selectedColorIndex = userProfile.getProfileColorIndex();
+                            updateProfileIconPreview();
+                            
+                            return; // Sortir de la méthode car tout est OK
+                        }
+                    } catch (Exception e) {
+                        Log.e(TAG, "Erreur lors de la conversion des données utilisateur: " + e.getMessage(), e);
+                        // Continuer pour créer un nouveau profil
                     }
-
-                    // Load banner image if exists
-                    if (userProfile.getBannerImageUrl() != null && !userProfile.getBannerImageUrl().isEmpty()) {
-                        Glide.with(requireContext())
-                                .load(userProfile.getBannerImageUrl())
-                                .placeholder(android.R.color.holo_blue_light)
-                                .into(binding.bannerImagePreview);
-                    }
-                } else {
-                    // Create new user profile if it doesn't exist
-                    userProfile = new User(currentUser.getUid(), currentUser.getDisplayName(), currentUser.getEmail());
-                    binding.usernameEdit.setText(userProfile.getUsername());
                 }
+                
+                // Si on arrive ici, c'est que les données n'existent pas ou sont invalides
+                Log.w(TAG, "Aucun profil utilisateur trouvé ou données invalides, création d'un nouveau profil");
+                
+                // Créer un nouveau profil utilisateur avec les valeurs par défaut
+                String displayName = currentUser.getDisplayName();
+                if (displayName == null || displayName.isEmpty()) {
+                    displayName = "Utilisateur"; // Valeur par défaut
+                }
+                
+                userProfile = new User(
+                    currentUser.getUid(),
+                    displayName,
+                    currentUser.getEmail()
+                );
+                
+                // Remplir le formulaire avec les données par défaut
+                binding.usernameEdit.setText(userProfile.getUsername());
+                if (userProfile.getBio() != null) {
+                    binding.bioEdit.setText(userProfile.getBio());
+                }
+                
+                // Définir les sélections d'icône et de couleur par défaut
+                binding.profileIconSpinner.setSelection(0);
+                binding.profileColorSpinner.setSelection(0);
+                selectedIconIndex = 0;
+                selectedColorIndex = 0;
+                updateProfileIconPreview();
+                
+                // Sauvegarder immédiatement ce nouveau profil dans la base de données
+                saveUserToDatabase();
             }
 
             @Override
@@ -231,7 +300,6 @@ public class EditProfileFragment extends Fragment {
         });
     }
 
-    // Interface pour gérer les callbacks d'upload d'images
     interface OnImageUploadListener {
         void onSuccess(String downloadUrl);
         void onFailure(String errorMessage);
@@ -243,11 +311,13 @@ public class EditProfileFragment extends Fragment {
             return;
         }
 
+        // Get user input
         String username = binding.usernameEdit.getText().toString().trim();
         String bio = binding.bioEdit.getText().toString().trim();
 
+        // Validate input
         if (username.isEmpty()) {
-            binding.usernameLayout.setError("Le nom d'utilisateur ne peut pas être vide");
+            binding.usernameLayout.setError("Le nom d'utilisateur est requis");
             return;
         }
 
@@ -258,6 +328,8 @@ public class EditProfileFragment extends Fragment {
         // Update user profile
         userProfile.setUsername(username);
         userProfile.setBio(bio);
+        userProfile.setProfileIconIndex(selectedIconIndex);
+        userProfile.setProfileColorIndex(selectedColorIndex);
 
         // Update display name in Firebase Auth
         UserProfileChangeRequest profileUpdates = new UserProfileChangeRequest.Builder()
@@ -269,9 +341,14 @@ public class EditProfileFragment extends Fragment {
                     if (task.isSuccessful()) {
                         Log.d(TAG, "User profile updated in Firebase Auth");
                         
+                        // Sauvegarder directement les données utilisateur
+                        saveUserToDatabase();
+                        
+                        // Commenté car nous n'utilisons plus Firebase Storage pour les images
+                        /*
                         // Now handle image uploads
                         if (selectedProfileImageUri != null && selectedBannerImageUri != null) {
-                            // Upload both images
+                            // Both profile and banner images selected
                             uploadProfileImage(selectedProfileImageUri, false, new OnImageUploadListener() {
                                 @Override
                                 public void onSuccess(String downloadUrl) {
@@ -282,51 +359,52 @@ public class EditProfileFragment extends Fragment {
                                             userProfile.setBannerImageUrl(downloadUrl);
                                             saveUserToDatabase();
                                         }
-                                        
+
                                         @Override
                                         public void onFailure(String errorMessage) {
                                             handleUploadError(errorMessage);
                                         }
                                     });
                                 }
-                                
+
                                 @Override
                                 public void onFailure(String errorMessage) {
                                     handleUploadError(errorMessage);
                                 }
                             });
                         } else if (selectedProfileImageUri != null) {
-                            // Upload only profile image
+                            // Only profile image selected
                             uploadProfileImage(selectedProfileImageUri, false, new OnImageUploadListener() {
                                 @Override
                                 public void onSuccess(String downloadUrl) {
                                     userProfile.setProfileImageUrl(downloadUrl);
                                     saveUserToDatabase();
                                 }
-                                
+
                                 @Override
                                 public void onFailure(String errorMessage) {
                                     handleUploadError(errorMessage);
                                 }
                             });
                         } else if (selectedBannerImageUri != null) {
-                            // Upload only banner image
+                            // Only banner image selected
                             uploadProfileImage(selectedBannerImageUri, true, new OnImageUploadListener() {
                                 @Override
                                 public void onSuccess(String downloadUrl) {
                                     userProfile.setBannerImageUrl(downloadUrl);
                                     saveUserToDatabase();
                                 }
-                                
+
                                 @Override
                                 public void onFailure(String errorMessage) {
                                     handleUploadError(errorMessage);
                                 }
                             });
                         } else {
-                            // No images to upload, just save user data
+                            // No images selected, just save user data
                             saveUserToDatabase();
                         }
+                        */
                     } else {
                         Log.e(TAG, "Failed to update user profile in Firebase Auth", task.getException());
                         binding.progressBar.setVisibility(View.GONE);
@@ -364,22 +442,13 @@ public class EditProfileFragment extends Fragment {
                 });
     }
 
+    // Commenté car nous n'utilisons plus Firebase Storage pour les images
+    /*
     private void uploadProfileImage(Uri imageUri, boolean isBanner, OnImageUploadListener listener) {
         if (imageUri == null) {
             Log.e(TAG, "uploadProfileImage: imageUri is null");
             listener.onFailure("Aucune image sélectionnée");
             return;
-        }
-
-        if (storageRef == null) {
-            try {
-                storageRef = FirebaseStorage.getInstance().getReference();
-                Log.d(TAG, "Storage reference initialized");
-            } catch (Exception e) {
-                Log.e(TAG, "Failed to initialize storage reference: " + e.getMessage(), e);
-                listener.onFailure("Erreur d'initialisation du stockage: " + e.getMessage());
-                return;
-            }
         }
 
         if (currentUser == null || currentUser.getUid() == null) {
@@ -389,79 +458,105 @@ public class EditProfileFragment extends Fragment {
         }
 
         try {
+            // Initialiser la référence de stockage si nécessaire
+            if (storageRef == null) {
+                storageRef = FirebaseStorage.getInstance().getReference();
+                Log.d(TAG, "Storage reference initialized");
+            }
+            
+            // Créer un nom de fichier unique avec extension
+            String userId = currentUser.getUid();
             String fileName = UUID.randomUUID().toString() + ".jpg";
-            String path = isBanner ? "banner_images" : "profile_images";
-            String fullPath = path + "/" + currentUser.getUid() + "/" + fileName;
+            String folderPath = isBanner ? "banner_images" : "profile_images";
             
-            Log.d(TAG, "Uploading " + (isBanner ? "banner" : "profile") + " image to: " + fullPath);
+            // Créer la référence de stockage directement
+            StorageReference fileRef = FirebaseStorage.getInstance()
+                .getReference()
+                .child(folderPath)
+                .child(userId)
+                .child(fileName);
             
-            StorageReference fileRef = FirebaseStorage.getInstance().getReference().child(fullPath);
+            Log.d(TAG, "Uploading " + (isBanner ? "banner" : "profile") + " image to path: " + fileRef.getPath());
             
-            // Show progress
+            // Afficher la progression
             binding.progressBar.setVisibility(View.VISIBLE);
             
-            // Compression de l'image avant l'upload
-            ByteArrayOutputStream baos = new ByteArrayOutputStream();
-            Bitmap bitmap = MediaStore.Images.Media.getBitmap(requireActivity().getContentResolver(), imageUri);
-            bitmap = getResizedBitmap(bitmap, isBanner ? 1200 : 800); // Redimensionner selon le type d'image
-            bitmap.compress(Bitmap.CompressFormat.JPEG, 80, baos);
-            byte[] data = baos.toByteArray();
-            
-            // Upload des données compressées
-            UploadTask uploadTask = fileRef.putBytes(data);
-            uploadTask
-                .addOnSuccessListener(taskSnapshot -> {
-                    Log.d(TAG, "Image uploaded successfully to: " + fullPath);
-                    fileRef.getDownloadUrl()
-                        .addOnSuccessListener(uri -> {
-                            Log.d(TAG, "Download URL retrieved: " + uri.toString());
-                            binding.progressBar.setVisibility(View.GONE);
-                            listener.onSuccess(uri.toString());
-                        })
-                        .addOnFailureListener(e -> {
-                            Log.e(TAG, "Failed to get download URL: " + e.getMessage(), e);
-                            binding.progressBar.setVisibility(View.GONE);
-                            listener.onFailure("Erreur lors de la récupération de l'URL: " + e.getMessage());
-                        });
-                })
-                .addOnFailureListener(e -> {
-                    Log.e(TAG, "Failed to upload image: " + e.getMessage(), e);
-                    binding.progressBar.setVisibility(View.GONE);
-                    
-                    String errorMessage;
-                    if (e instanceof StorageException) {
-                        StorageException storageException = (StorageException) e;
-                        int errorCode = storageException.getErrorCode();
-                        
-                        switch (errorCode) {
-                            case StorageException.ERROR_QUOTA_EXCEEDED:
-                                errorMessage = "Quota de stockage dépassé";
-                                break;
-                            case StorageException.ERROR_NOT_AUTHENTICATED:
-                                errorMessage = "Utilisateur non authentifié";
-                                break;
-                            case StorageException.ERROR_NOT_AUTHORIZED:
-                                errorMessage = "Opération non autorisée";
-                                break;
-                            case StorageException.ERROR_RETRY_LIMIT_EXCEEDED:
-                                errorMessage = "Limite de tentatives dépassée";
-                                break;
-                            case StorageException.ERROR_OBJECT_NOT_FOUND:
-                                errorMessage = "Erreur: Chemin de stockage non trouvé";
-                                break;
-                            default:
-                                errorMessage = "Erreur de téléchargement: " + e.getMessage();
-                        }
-                    } else {
-                        errorMessage = "Erreur de téléchargement: " + e.getMessage();
+            try {
+                // Compression de l'image avant l'upload
+                ByteArrayOutputStream baos = new ByteArrayOutputStream();
+                Bitmap bitmap = MediaStore.Images.Media.getBitmap(requireActivity().getContentResolver(), imageUri);
+                bitmap = getResizedBitmap(bitmap, isBanner ? 1200 : 800);
+                bitmap.compress(Bitmap.CompressFormat.JPEG, 80, baos);
+                byte[] data = baos.toByteArray();
+                
+                // Upload des données compressées
+                UploadTask uploadTask = fileRef.putBytes(data);
+                
+                // Attendre que l'upload soit terminé avant de récupérer l'URL
+                uploadTask.continueWithTask(task -> {
+                    if (!task.isSuccessful()) {
+                        Log.e(TAG, "Upload failed: " + task.getException());
+                        throw task.getException();
                     }
                     
-                    listener.onFailure(errorMessage);
-                })
-                .addOnProgressListener(taskSnapshot -> {
+                    // L'upload est terminé, récupérer l'URL
+                    Log.d(TAG, "Upload completed, getting download URL");
+                    return fileRef.getDownloadUrl();
+                }).addOnCompleteListener(task -> {
+                    binding.progressBar.setVisibility(View.GONE);
+                    
+                    if (task.isSuccessful()) {
+                        Uri downloadUri = task.getResult();
+                        Log.d(TAG, "Download URL retrieved: " + downloadUri.toString());
+                        listener.onSuccess(downloadUri.toString());
+                    } else {
+                        Exception e = task.getException();
+                        Log.e(TAG, "Failed to get download URL: " + (e != null ? e.getMessage() : "Unknown error"), e);
+                        
+                        String errorMessage;
+                        if (e instanceof StorageException) {
+                            StorageException storageException = (StorageException) e;
+                            int errorCode = storageException.getErrorCode();
+                            
+                            switch (errorCode) {
+                                case StorageException.ERROR_QUOTA_EXCEEDED:
+                                    errorMessage = "Quota de stockage dépassé";
+                                    break;
+                                case StorageException.ERROR_NOT_AUTHENTICATED:
+                                    errorMessage = "Utilisateur non authentifié";
+                                    break;
+                                case StorageException.ERROR_NOT_AUTHORIZED:
+                                    errorMessage = "Opération non autorisée";
+                                    break;
+                                case StorageException.ERROR_RETRY_LIMIT_EXCEEDED:
+                                    errorMessage = "Limite de tentatives dépassée";
+                                    break;
+                                case StorageException.ERROR_OBJECT_NOT_FOUND:
+                                    errorMessage = "Erreur: Chemin de stockage non trouvé";
+                                    break;
+                                default:
+                                    errorMessage = "Erreur de stockage: " + storageException.getMessage();
+                                    break;
+                            }
+                        } else {
+                            errorMessage = "Erreur lors de l'upload: " + (e != null ? e.getMessage() : "Erreur inconnue");
+                        }
+                        
+                        listener.onFailure(errorMessage);
+                    }
+                });
+                
+                // Ajouter un écouteur de progression
+                uploadTask.addOnProgressListener(taskSnapshot -> {
                     double progress = (100.0 * taskSnapshot.getBytesTransferred()) / taskSnapshot.getTotalByteCount();
                     Log.d(TAG, "Upload progress: " + progress + "%");
                 });
+                
+            } catch (IOException e) {
+                Log.e(TAG, "Error processing image: " + e.getMessage(), e);
+                binding.progressBar.setVisibility(View.GONE);
+                listener.onFailure("Erreur lors du traitement de l'image: " + e.getMessage());
+            }
         } catch (Exception e) {
             Log.e(TAG, "Unexpected error during upload: " + e.getMessage(), e);
             binding.progressBar.setVisibility(View.GONE);
@@ -487,6 +582,7 @@ public class EditProfileFragment extends Fragment {
         
         return Bitmap.createScaledBitmap(image, width, height, true);
     }
+    */
 
     @Override
     public void onDestroyView() {
