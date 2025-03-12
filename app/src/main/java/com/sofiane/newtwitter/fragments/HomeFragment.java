@@ -1,6 +1,7 @@
 package com.sofiane.newtwitter.fragments;
 
 import android.os.Bundle;
+import android.os.Handler;
 import android.util.Log;
 import android.view.Gravity;
 import android.view.LayoutInflater;
@@ -95,18 +96,47 @@ public class HomeFragment extends Fragment implements PostAdapter.OnPostInteract
     
     private void observePosts() {
         try {
+            Log.d(TAG, "Starting to observe posts from ViewModel");
             postViewModel.getPosts().observe(getViewLifecycleOwner(), posts -> {
-                postAdapter.setPosts(posts);
+                Log.d(TAG, "Posts data changed: " + (posts != null ? posts.size() : 0) + " posts");
+                
+                // Toujours arrêter les indicateurs de chargement
                 binding.swipeRefreshLayout.setRefreshing(false);
                 binding.loadingProgressBar.setVisibility(View.GONE);
                 
+                // Mettre à jour l'adaptateur même si la liste est vide
+                postAdapter.setPosts(posts);
+                
                 // Show empty state if no posts
                 if (posts == null || posts.isEmpty()) {
+                    Log.d(TAG, "No posts available, showing empty state");
                     binding.emptyStateTextView.setVisibility(View.VISIBLE);
                     binding.postsRecyclerView.setVisibility(View.GONE);
+                    
+                    // Ajouter une animation pour attirer l'attention
+                    binding.emptyStateTextView.setAlpha(0f);
+                    binding.emptyStateTextView.animate()
+                        .alpha(1f)
+                        .setDuration(500)
+                        .start();
+                    
+                    // Mettre en évidence le bouton d'ajout
+                    binding.createPostFab.setScaleX(1.2f);
+                    binding.createPostFab.setScaleY(1.2f);
+                    binding.createPostFab.animate()
+                        .scaleX(1f)
+                        .scaleY(1f)
+                        .setDuration(500)
+                        .start();
                 } else {
+                    Log.d(TAG, "Posts available, showing RecyclerView");
                     binding.emptyStateTextView.setVisibility(View.GONE);
                     binding.postsRecyclerView.setVisibility(View.VISIBLE);
+                    
+                    // Log each post for debugging
+                    for (Post post : posts) {
+                        Log.d(TAG, "Post: " + post.getId() + ", User: " + post.getUsername() + ", Content: " + post.getContent());
+                    }
                 }
                 
                 Log.d(TAG, "Posts updated: " + (posts != null ? posts.size() : 0) + " posts");
@@ -118,6 +148,9 @@ public class HomeFragment extends Fragment implements PostAdapter.OnPostInteract
             binding.emptyStateTextView.setText(R.string.error_loading_posts);
             binding.emptyStateTextView.setVisibility(View.VISIBLE);
             binding.postsRecyclerView.setVisibility(View.GONE);
+            
+            // Afficher un toast avec l'erreur
+            Toast.makeText(requireContext(), "Error loading posts: " + e.getMessage(), Toast.LENGTH_LONG).show();
         }
     }
     
@@ -136,9 +169,27 @@ public class HomeFragment extends Fragment implements PostAdapter.OnPostInteract
     
     private void refreshPosts() {
         try {
+            Log.d(TAG, "Refreshing posts");
             binding.swipeRefreshLayout.setRefreshing(true);
             binding.loadingProgressBar.setVisibility(View.VISIBLE);
             binding.emptyStateTextView.setVisibility(View.GONE);
+            
+            // Définir un timeout pour arrêter le chargement si ça prend trop de temps
+            new Handler().postDelayed(() -> {
+                if (binding != null && binding.swipeRefreshLayout.isRefreshing()) {
+                    Log.w(TAG, "Loading posts timed out after 20 seconds");
+                    binding.swipeRefreshLayout.setRefreshing(false);
+                    binding.loadingProgressBar.setVisibility(View.GONE);
+                    
+                    // Vérifier si des posts sont déjà affichés
+                    if (postAdapter.getItemCount() == 0) {
+                        binding.emptyStateTextView.setText(R.string.error_loading_posts);
+                        binding.emptyStateTextView.setVisibility(View.VISIBLE);
+                        Toast.makeText(requireContext(), "Loading timed out. Please try again later.", Toast.LENGTH_SHORT).show();
+                    }
+                }
+            }, 20000); // 20 secondes de timeout
+            
             postViewModel.loadPosts();
         } catch (Exception e) {
             Log.e(TAG, "Error refreshing posts: " + e.getMessage(), e);
@@ -146,6 +197,9 @@ public class HomeFragment extends Fragment implements PostAdapter.OnPostInteract
             binding.loadingProgressBar.setVisibility(View.GONE);
             binding.emptyStateTextView.setText(R.string.error_loading_posts);
             binding.emptyStateTextView.setVisibility(View.VISIBLE);
+            
+            // Afficher un toast avec l'erreur
+            Toast.makeText(requireContext(), "Error refreshing posts: " + e.getMessage(), Toast.LENGTH_LONG).show();
         }
     }
     

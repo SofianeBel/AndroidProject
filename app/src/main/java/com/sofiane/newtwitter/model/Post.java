@@ -1,6 +1,11 @@
 package com.sofiane.newtwitter.model;
 
+import com.google.firebase.database.Exclude;
+import com.google.firebase.database.ServerValue;
+
 import java.util.Date;
+import java.util.HashMap;
+import java.util.Map;
 
 public class Post {
     private String id;
@@ -12,8 +17,10 @@ public class Post {
     private int likeCount;
     private int commentCount;
 
-    // Required empty constructor for Firestore
+    // Required empty constructor for Firebase
     public Post() {
+        // Firebase requires an empty constructor
+        this.createdAt = new Date();
     }
 
     public Post(String id, String userId, String username, String content, String imageUrl, Date createdAt, int likeCount) {
@@ -22,12 +29,18 @@ public class Post {
         this.username = username;
         this.content = content;
         this.imageUrl = imageUrl;
-        this.createdAt = createdAt;
+        this.createdAt = createdAt != null ? createdAt : new Date();
         this.likeCount = likeCount;
+        this.commentCount = 0;
     }
 
     // Method to generate relative time string (e.g., "2 hours ago")
+    @Exclude
     public String getRelativeTime() {
+        if (createdAt == null) {
+            return "just now";
+        }
+        
         long diffInMillis = new Date().getTime() - createdAt.getTime();
         long diffInSeconds = diffInMillis / 1000;
         long diffInMinutes = diffInSeconds / 60;
@@ -108,5 +121,21 @@ public class Post {
 
     public void setCommentCount(int commentCount) {
         this.commentCount = commentCount;
+    }
+    
+    // Méthode pour convertir l'objet en Map pour Firebase
+    @Exclude
+    public Map<String, Object> toMap() {
+        HashMap<String, Object> result = new HashMap<>();
+        result.put("id", id);
+        result.put("userId", userId);
+        result.put("username", username);
+        result.put("content", content);
+        result.put("imageUrl", imageUrl);
+        result.put("createdAt", createdAt.getTime());
+        result.put("likeCount", likeCount);
+        result.put("commentCount", commentCount);
+        
+        return result;
     }
 } 

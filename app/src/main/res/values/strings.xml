@@ -14,7 +14,7 @@
     
     <!-- Home Fragment -->
     <string name="home_feed">Home Feed</string>
-    <string name="no_posts_available">No posts available</string>
+    <string name="no_posts_available">Soyez le premier à poster !</string>
     <string name="error_loading_posts">Error loading posts</string>
     <string name="like">Like</string>
     <string name="comment">Comment</string>

@@ -1,5 +1,7 @@
 package com.sofiane.newtwitter.repository;
 
+import android.os.Handler;
+import android.os.Looper;
 import android.util.Log;
 
 import androidx.annotation.NonNull;
@@ -26,6 +28,9 @@ public class PostRepository {
     private static final String TAG = "PostRepository";
     private static PostRepository instance;
     
+    // Flag to track if sample posts have been created
+    private boolean samplePostsCreated = false;
+    
     // Firebase references
     private final DatabaseReference postsRef;
     private final DatabaseReference likesRef;
@@ -36,7 +41,7 @@ public class PostRepository {
 
     private PostRepository() {
         // Initialize Firebase Database references
-        FirebaseDatabase database = FirebaseDatabase.getInstance();
+        FirebaseDatabase database = FirebaseDatabase.getInstance("https://newtwitter-65ad1-default-rtdb.europe-west1.firebasedatabase.app");
         postsRef = database.getReference("posts");
         likesRef = database.getReference("likes");
         
@@ -63,28 +68,59 @@ public class PostRepository {
     // Load all posts from Firebase
     public void loadAllPosts() {
         try {
+            Log.d(TAG, "Starting to load all posts from Firebase");
             // Query to get all posts ordered by creation time (newest first)
-            Query query = postsRef.orderByChild("createdAt");
+            // Firebase ne supporte pas directement le tri décroissant, nous devons donc
+            // trier côté client ou utiliser une autre approche
+            Query query = postsRef;
             
             query.addValueEventListener(new ValueEventListener() {
                 @Override
                 public void onDataChange(@NonNull DataSnapshot dataSnapshot) {
                     try {
                         List<Post> posts = new ArrayList<>();
+                        Log.d(TAG, "onDataChange called, snapshot has " + dataSnapshot.getChildrenCount() + " children");
                         
                         // Loop through all posts
                         for (DataSnapshot postSnapshot : dataSnapshot.getChildren()) {
-                            Post post = postSnapshot.getValue(Post.class);
-                            if (post != null) {
-                                posts.add(0, post); // Add at beginning for reverse chronological order
+                            try {
+                                Post post = postSnapshot.getValue(Post.class);
+                                if (post != null) {
+                                    posts.add(post); // Add to list
+                                    Log.d(TAG, "Loaded post: " + post.getId() + ", content: " + post.getContent());
+                                } else {
+                                    Log.w(TAG, "Failed to parse post from: " + postSnapshot.getKey());
+                                }
+                            } catch (Exception e) {
+                                Log.e(TAG, "Error parsing post: " + e.getMessage(), e);
                             }
                         }
                         
+                        // Trier les posts par date (du plus récent au plus ancien)
+                        posts.sort((p1, p2) -> p2.getCreatedAt().compareTo(p1.getCreatedAt()));
+                        
+                        // Toujours mettre à jour la LiveData, même si la liste est vide
                         allPostsLiveData.setValue(posts);
-                        Log.d(TAG, "Loaded " + posts.size() + " posts from Firebase");
+                        
+                        // Log le résultat
+                        if (posts.isEmpty()) {
+                            Log.d(TAG, "No posts found in Firebase");
+                        } else {
+                            Log.d(TAG, "Loaded " + posts.size() + " posts from Firebase");
+                        }
+                        
+                        // Si aucun post n'est trouvé, créer quelques posts de test
+                        // Mais seulement si c'est la première fois
+                        if (posts.isEmpty() && !samplePostsCreated) {
+                            Log.d(TAG, "No posts found, creating sample posts");
+                            samplePostsCreated = true;
+                            createSamplePosts();
+                        }
                     } catch (Exception e) {
                         Log.e(TAG, "Error parsing posts: " + e.getMessage(), e);
                         errorMessageLiveData.setValue("Error loading posts: " + e.getMessage());
+                        // Même en cas d'erreur, mettre à jour la LiveData avec une liste vide
+                        allPostsLiveData.setValue(new ArrayList<>());
                     }
                 }
 
@@ -92,11 +128,73 @@ public class PostRepository {
                 public void onCancelled(@NonNull DatabaseError databaseError) {
                     Log.e(TAG, "Database error: " + databaseError.getMessage());
                     errorMessageLiveData.setValue("Database error: " + databaseError.getMessage());
+                    // En cas d'erreur, mettre à jour la LiveData avec une liste vide
+                    allPostsLiveData.setValue(new ArrayList<>());
                 }
             });
         } catch (Exception e) {
             Log.e(TAG, "Error setting up posts listener: " + e.getMessage(), e);
             errorMessageLiveData.setValue("Error setting up posts listener: " + e.getMessage());
+            // En cas d'erreur, mettre à jour la LiveData avec une liste vide
+            allPostsLiveData.setValue(new ArrayList<>());
+        }
+    }
+    
+    // Créer des posts de test si aucun post n'est trouvé
+    private void createSamplePosts() {
+        try {
+            Log.d(TAG, "Creating sample posts");
+            // Créer quelques posts de test avec des délais pour éviter les conflits
+            new Handler(Looper.getMainLooper()).postDelayed(() -> {
+                createSamplePost("user1", "User1", "Bienvenue sur notre nouvelle application de réseau social!");
+            }, 100);
+            
+            new Handler(Looper.getMainLooper()).postDelayed(() -> {
+                createSamplePost("user2", "User2", "J'adore cette nouvelle application! Tellement simple à utiliser.");
+            }, 300);
+            
+            new Handler(Looper.getMainLooper()).postDelayed(() -> {
+                createSamplePost("user3", "User3", "Bonjour à tous! Je viens de rejoindre cette plateforme.");
+            }, 500);
+            
+            // Ne pas rappeler loadAllPosts() pour éviter une boucle infinie
+            // Les posts seront chargés automatiquement grâce au ValueEventListener
+        } catch (Exception e) {
+            Log.e(TAG, "Error creating sample posts: " + e.getMessage(), e);
+        }
+    }
+    
+    // Méthode spécifique pour créer des posts de test
+    private void createSamplePost(String userId, String username, String content) {
+        try {
+            // Generate a unique key for the new post
+            String postId = postsRef.push().getKey();
+            if (postId == null) {
+                Log.e(TAG, "Failed to create post ID for sample post");
+                return;
+            }
+            
+            // Create post object with current timestamp
+            Post post = new Post(
+                postId,
+                userId,
+                username,
+                content,
+                null, // No image URL for now
+                new Date(),
+                0 // Initial like count
+            );
+            
+            // Save post to Firebase
+            postsRef.child(postId).setValue(post)
+                .addOnSuccessListener(aVoid -> {
+                    Log.d(TAG, "Sample post created successfully with ID: " + postId);
+                })
+                .addOnFailureListener(e -> {
+                    Log.e(TAG, "Error creating sample post: " + e.getMessage(), e);
+                });
+        } catch (Exception e) {
+            Log.e(TAG, "Error creating sample post: " + e.getMessage(), e);
         }
     }
 

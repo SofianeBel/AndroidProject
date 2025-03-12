@@ -1,0 +1,30 @@
+{
+  "rules": {
+    ".read": true,
+    ".write": true,
+    "posts": {
+      ".read": true,
+      ".write": true,
+      "$postId": {
+        ".read": true,
+        ".write": true
+      }
+    },
+    "likes": {
+      ".read": true,
+      ".write": true,
+      "$likeId": {
+        ".read": true,
+        ".write": true
+      }
+    },
+    "users": {
+      ".read": true,
+      ".write": true,
+      "$userId": {
+        ".read": true,
+        ".write": true
+      }
+    }
+  }
+} 

@@ -6,7 +6,7 @@ import android.util.Log;
 import android.widget.Toast;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.navigation.NavController;
-import androidx.navigation.Navigation;
+import androidx.navigation.fragment.NavHostFragment;
 import androidx.navigation.ui.AppBarConfiguration;
 import androidx.navigation.ui.NavigationUI;
 import com.google.firebase.auth.FirebaseAuth;
@@ -74,8 +74,28 @@ public class MainActivity extends AppCompatActivity {
                 }
                 
                 try {
-                    navController = Navigation.findNavController(this, R.id.nav_host_fragment);
-                    Log.d(TAG, "NavController initialized successfully");
+                    // Utiliser NavHostFragment pour obtenir le NavController
+                    Log.d(TAG, "Finding NavHostFragment with ID: " + R.id.nav_host_fragment);
+                    NavHostFragment navHostFragment = (NavHostFragment) getSupportFragmentManager()
+                            .findFragmentById(R.id.nav_host_fragment);
+                    
+                    if (navHostFragment == null) {
+                        Log.e(TAG, "NavHostFragment is null - fragment not found in layout");
+                        Toast.makeText(this, "Error: Navigation host fragment not found", Toast.LENGTH_LONG).show();
+                        return;
+                    }
+                    
+                    Log.d(TAG, "NavHostFragment found: " + navHostFragment);
+                    navController = navHostFragment.getNavController();
+                    if (navController == null) {
+                        Log.e(TAG, "NavController is null - could not get controller from fragment");
+                        Toast.makeText(this, "Error: NavController not found", Toast.LENGTH_LONG).show();
+                        return;
+                    }
+                    
+                    Log.d(TAG, "NavController initialized successfully: " + navController);
+                    Log.d(TAG, "Current destination: " + (navController.getCurrentDestination() != null ? 
+                            navController.getCurrentDestination().getLabel() : "null"));
                 } catch (Exception e) {
                     Log.e(TAG, "Error finding NavController: " + e.getMessage(), e);
                     Toast.makeText(this, "Error initializing navigation: " + e.getMessage(), Toast.LENGTH_LONG).show();

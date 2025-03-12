@@ -31,7 +31,11 @@ public class PostViewModel extends ViewModel {
     }
 
     public void loadPosts() {
-        postRepository.loadAllPosts();
+        try {
+            postRepository.loadAllPosts();
+        } catch (Exception e) {
+            errorMessage.setValue("Error loading posts: " + e.getMessage());
+        }
     }
 
     public void createPost(String content) {
