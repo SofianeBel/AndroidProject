@@ -481,46 +481,67 @@ public class PostRepository {
                 return;
             }
             
-            // Create reply object
-            Post reply = new Post(
-                replyId,
-                userId,
-                username,
-                content,
-                null, // No image URL for now
-                new Date(),
-                0, // Initial like count
-                parentPostId // Parent post ID
-            );
-            
-            // Save reply to Firebase
-            postsRef.child(replyId).setValue(reply)
-                .addOnSuccessListener(aVoid -> {
-                    Log.d(TAG, "Reply created successfully with ID: " + replyId);
-                    
-                    // Increment comment count on parent post
-                    postsRef.child(parentPostId).child("commentCount").addListenerForSingleValueEvent(
-                        new ValueEventListener() {
-                            @Override
-                            public void onDataChange(@NonNull DataSnapshot snapshot) {
-                                Integer currentComments = snapshot.getValue(Integer.class);
-                                if (currentComments != null) {
-                                    postsRef.child(parentPostId).child("commentCount").setValue(currentComments + 1);
-                                } else {
-                                    postsRef.child(parentPostId).child("commentCount").setValue(1);
-                                }
-                            }
+            // Récupérer le post parent pour obtenir le nom d'utilisateur
+            postsRef.child(parentPostId).addListenerForSingleValueEvent(new ValueEventListener() {
+                @Override
+                public void onDataChange(@NonNull DataSnapshot dataSnapshot) {
+                    try {
+                        Post parentPost = dataSnapshot.getValue(Post.class);
+                        String parentUsername = parentPost != null ? parentPost.getUsername() : "";
+                        
+                        // Create reply object
+                        Post reply = new Post(
+                            replyId,
+                            userId,
+                            username,
+                            content,
+                            null, // No image URL for now
+                            new Date(),
+                            0, // Initial like count
+                            parentPostId, // Parent post ID
+                            parentUsername // Parent username
+                        );
+                        
+                        // Save reply to Firebase
+                        postsRef.child(replyId).setValue(reply)
+                            .addOnSuccessListener(aVoid -> {
+                                Log.d(TAG, "Reply created successfully with ID: " + replyId);
+                                
+                                // Increment comment count on parent post
+                                postsRef.child(parentPostId).child("commentCount").addListenerForSingleValueEvent(
+                                    new ValueEventListener() {
+                                        @Override
+                                        public void onDataChange(@NonNull DataSnapshot snapshot) {
+                                            Integer currentComments = snapshot.getValue(Integer.class);
+                                            if (currentComments != null) {
+                                                postsRef.child(parentPostId).child("commentCount").setValue(currentComments + 1);
+                                            } else {
+                                                postsRef.child(parentPostId).child("commentCount").setValue(1);
+                                            }
+                                        }
 
-                            @Override
-                            public void onCancelled(@NonNull DatabaseError error) {
-                                Log.e(TAG, "Error updating comment count: " + error.getMessage());
-                            }
-                        });
-                })
-                .addOnFailureListener(e -> {
-                    Log.e(TAG, "Error creating reply: " + e.getMessage(), e);
-                    errorMessageLiveData.setValue("Failed to create reply: " + e.getMessage());
-                });
+                                        @Override
+                                        public void onCancelled(@NonNull DatabaseError error) {
+                                            Log.e(TAG, "Error updating comment count: " + error.getMessage());
+                                        }
+                                    });
+                            })
+                            .addOnFailureListener(e -> {
+                                Log.e(TAG, "Error creating reply: " + e.getMessage(), e);
+                                errorMessageLiveData.setValue("Failed to create reply: " + e.getMessage());
+                            });
+                    } catch (Exception e) {
+                        Log.e(TAG, "Error creating reply: " + e.getMessage(), e);
+                        errorMessageLiveData.setValue("Error creating reply: " + e.getMessage());
+                    }
+                }
+                
+                @Override
+                public void onCancelled(@NonNull DatabaseError databaseError) {
+                    Log.e(TAG, "Error retrieving parent post: " + databaseError.getMessage());
+                    errorMessageLiveData.setValue("Error retrieving parent post: " + databaseError.getMessage());
+                }
+            });
         } catch (Exception e) {
             Log.e(TAG, "Error creating reply: " + e.getMessage(), e);
             errorMessageLiveData.setValue("Error creating reply: " + e.getMessage());

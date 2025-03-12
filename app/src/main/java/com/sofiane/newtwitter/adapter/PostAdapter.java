@@ -155,7 +155,10 @@ public class PostAdapter extends RecyclerView.Adapter<PostAdapter.PostViewHolder
             
             if (post.isReply() && replyingToLayout != null) {
                 replyingToLayout.setVisibility(View.VISIBLE);
-                replyingToTextView.setText("En réponse à @" + post.getParentId());
+                String replyingTo = post.getParentUsername() != null && !post.getParentUsername().isEmpty() 
+                    ? "@" + post.getParentUsername().toLowerCase().replace(" ", "") 
+                    : post.getParentId();
+                replyingToTextView.setText("En réponse à " + replyingTo);
             } else {
                 if (replyingToLayout != null) {
                     replyingToLayout.setVisibility(View.GONE);

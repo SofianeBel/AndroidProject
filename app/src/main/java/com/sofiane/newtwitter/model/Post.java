@@ -21,6 +21,7 @@ public class Post {
     // Nouveaux champs pour les réponses et les retweets
     private int retweetCount;
     private String parentId; // ID du post parent (pour les réponses)
+    private String parentUsername; // Nom d'utilisateur du post parent (pour les réponses)
     private String originalPostId; // ID du post original (pour les retweets)
     private String originalUserId; // ID de l'utilisateur original (pour les retweets)
     private String originalUsername; // Nom de l'utilisateur original (pour les retweets)
@@ -54,6 +55,14 @@ public class Post {
     public Post(String id, String userId, String username, String content, String imageUrl, Date createdAt, int likeCount, String parentId) {
         this(id, userId, username, content, imageUrl, createdAt, likeCount);
         this.parentId = parentId;
+        this.isReply = true;
+    }
+
+    // Constructeur pour les réponses avec nom d'utilisateur parent
+    public Post(String id, String userId, String username, String content, String imageUrl, Date createdAt, int likeCount, String parentId, String parentUsername) {
+        this(id, userId, username, content, imageUrl, createdAt, likeCount);
+        this.parentId = parentId;
+        this.parentUsername = parentUsername;
         this.isReply = true;
     }
 
@@ -194,6 +203,14 @@ public class Post {
         this.isReply = parentId != null && !parentId.isEmpty();
     }
 
+    public String getParentUsername() {
+        return parentUsername;
+    }
+    
+    public void setParentUsername(String parentUsername) {
+        this.parentUsername = parentUsername;
+    }
+
     public String getOriginalPostId() {
         return originalPostId;
     }
@@ -278,6 +295,10 @@ public class Post {
         
         if (parentId != null) {
             result.put("parentId", parentId);
+        }
+        
+        if (parentUsername != null) {
+            result.put("parentUsername", parentUsername);
         }
         
         if (isRetweet) {
