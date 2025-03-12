@@ -81,6 +81,8 @@ public class PostRepository {
                 public void onDataChange(@NonNull DataSnapshot dataSnapshot) {
                     try {
                         List<Post> posts = new ArrayList<>();
+                        List<Post> allPosts = new ArrayList<>(); // Liste contenant tous les posts, y compris les réponses et retweets
+                        
                         Log.d(TAG, "onDataChange called, snapshot has " + dataSnapshot.getChildrenCount() + " children");
                         
                         // Loop through all posts
@@ -95,6 +97,9 @@ public class PostRepository {
                                 
                                 Post post = postSnapshot.getValue(Post.class);
                                 if (post != null) {
+                                    // Ajouter tous les posts à la liste complète
+                                    allPosts.add(post);
+                                    
                                     // Filtrer les retweets et les réponses pour qu'ils n'apparaissent pas dans le fil d'actualité
                                     if (!post.isRetweet() && !post.isReply()) {
                                         posts.add(post); // Add to list only if it's not a retweet or reply
@@ -112,9 +117,10 @@ public class PostRepository {
                         
                         // Trier les posts par date (du plus récent au plus ancien)
                         posts.sort((p1, p2) -> p2.getCreatedAt().compareTo(p1.getCreatedAt()));
+                        allPosts.sort((p1, p2) -> p2.getCreatedAt().compareTo(p1.getCreatedAt()));
                         
-                        // Toujours mettre à jour la LiveData, même si la liste est vide
-                        allPostsLiveData.setValue(posts);
+                        // Mettre à jour la LiveData avec la liste filtrée pour le fil d'actualité
+                        allPostsLiveData.setValue(allPosts);
                         
                         // Log le résultat
                         if (posts.isEmpty()) {
@@ -689,6 +695,57 @@ public class PostRepository {
         } catch (Exception e) {
             Log.e(TAG, "Error setting up retweets and replies listener: " + e.getMessage(), e);
             errorMessageLiveData.setValue("Error setting up retweets and replies listener: " + e.getMessage());
+        }
+    }
+
+    // Méthode pour charger les réponses à un post spécifique
+    public void loadRepliesForPost(String parentPostId) {
+        try {
+            Log.d(TAG, "Starting to load replies for post: " + parentPostId);
+            Query query = postsRef.orderByChild("parentId").equalTo(parentPostId);
+            
+            query.addValueEventListener(new ValueEventListener() {
+                @Override
+                public void onDataChange(@NonNull DataSnapshot dataSnapshot) {
+                    try {
+                        List<Post> replies = new ArrayList<>();
+                        Log.d(TAG, "onDataChange called for replies, snapshot has " + dataSnapshot.getChildrenCount() + " children");
+                        
+                        // Loop through all replies
+                        for (DataSnapshot postSnapshot : dataSnapshot.getChildren()) {
+                            try {
+                                Post post = postSnapshot.getValue(Post.class);
+                                if (post != null && post.isReply() && parentPostId.equals(post.getParentId())) {
+                                    replies.add(post);
+                                    Log.d(TAG, "Loaded reply: " + post.getId() + ", content: " + post.getContent());
+                                }
+                            } catch (Exception e) {
+                                Log.e(TAG, "Error parsing reply: " + e.getMessage(), e);
+                            }
+                        }
+                        
+                        // Trier les réponses par date (du plus récent au plus ancien)
+                        replies.sort((p1, p2) -> p2.getCreatedAt().compareTo(p1.getCreatedAt()));
+                        
+                        // Mettre à jour une LiveData spécifique pour les réponses
+                        // Pour l'instant, nous n'avons pas créé cette LiveData, mais on pourrait l'ajouter
+                        // repliesLiveData.setValue(replies);
+                        
+                        Log.d(TAG, "Loaded " + replies.size() + " replies for post " + parentPostId);
+                    } catch (Exception e) {
+                        Log.e(TAG, "Error processing replies: " + e.getMessage(), e);
+                    }
+                }
+
+                @Override
+                public void onCancelled(@NonNull DatabaseError databaseError) {
+                    Log.e(TAG, "Error loading replies: " + databaseError.getMessage());
+                    errorMessageLiveData.setValue("Error loading replies: " + databaseError.getMessage());
+                }
+            });
+        } catch (Exception e) {
+            Log.e(TAG, "Error setting up replies listener: " + e.getMessage(), e);
+            errorMessageLiveData.setValue("Error setting up replies listener: " + e.getMessage());
         }
     }
 } 

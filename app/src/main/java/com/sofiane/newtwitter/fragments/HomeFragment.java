@@ -27,6 +27,10 @@ import com.sofiane.newtwitter.databinding.FragmentHomeBinding;
 import com.sofiane.newtwitter.model.Post;
 import com.sofiane.newtwitter.viewmodel.PostViewModel;
 
+import java.util.ArrayList;
+import java.util.List;
+import java.util.stream.Collectors;
+
 public class HomeFragment extends Fragment implements PostAdapter.OnPostInteractionListener {
     private static final String TAG = "HomeFragment";
     private FragmentHomeBinding binding;
@@ -128,18 +132,23 @@ public class HomeFragment extends Fragment implements PostAdapter.OnPostInteract
     private void observePosts() {
         try {
             Log.d(TAG, "Starting to observe posts from ViewModel");
-            postViewModel.getPosts().observe(getViewLifecycleOwner(), posts -> {
-                Log.d(TAG, "Posts data changed: " + (posts != null ? posts.size() : 0) + " posts");
+            postViewModel.getPosts().observe(getViewLifecycleOwner(), allPosts -> {
+                Log.d(TAG, "Posts data changed: " + (allPosts != null ? allPosts.size() : 0) + " posts");
                 
                 // Toujours arrêter les indicateurs de chargement
                 binding.swipeRefreshLayout.setRefreshing(false);
                 binding.loadingProgressBar.setVisibility(View.GONE);
                 
-                // Mettre à jour l'adaptateur même si la liste est vide
-                postAdapter.setPosts(posts);
+                // Filtrer les retweets et les réponses pour le fil d'actualité principal
+                List<Post> filteredPosts = allPosts != null ? allPosts.stream()
+                        .filter(post -> !post.isRetweet() && !post.isReply())
+                        .collect(Collectors.toList()) : new ArrayList<>();
+                
+                // Mettre à jour l'adaptateur avec la liste filtrée
+                postAdapter.setPosts(filteredPosts);
                 
                 // Show empty state if no posts
-                if (posts == null || posts.isEmpty()) {
+                if (filteredPosts.isEmpty()) {
                     Log.d(TAG, "No posts available, showing empty state");
                     binding.emptyStateTextView.setVisibility(View.VISIBLE);
                     binding.postsRecyclerView.setVisibility(View.GONE);
@@ -165,12 +174,12 @@ public class HomeFragment extends Fragment implements PostAdapter.OnPostInteract
                     binding.postsRecyclerView.setVisibility(View.VISIBLE);
                     
                     // Log each post for debugging
-                    for (Post post : posts) {
+                    for (Post post : filteredPosts) {
                         Log.d(TAG, "Post: " + post.getId() + ", User: " + post.getUsername() + ", Content: " + post.getContent());
                     }
                 }
                 
-                Log.d(TAG, "Posts updated: " + (posts != null ? posts.size() : 0) + " posts");
+                Log.d(TAG, "Posts updated: " + (filteredPosts != null ? filteredPosts.size() : 0) + " posts");
             });
         } catch (Exception e) {
             Log.e(TAG, "Error observing posts: " + e.getMessage(), e);
