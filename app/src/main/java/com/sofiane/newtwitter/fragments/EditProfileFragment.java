@@ -154,6 +154,7 @@ public class EditProfileFragment extends Fragment {
         binding.profileIconSpinner.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
             @Override
             public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
+                Log.d(TAG, "Icône sélectionnée: position=" + position);
                 selectedIconIndex = position;
                 updateProfileIconPreview();
             }
@@ -167,6 +168,7 @@ public class EditProfileFragment extends Fragment {
         binding.profileColorSpinner.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
             @Override
             public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
+                Log.d(TAG, "Couleur sélectionnée: position=" + position);
                 selectedColorIndex = position;
                 updateProfileIconPreview();
             }
@@ -213,6 +215,7 @@ public class EditProfileFragment extends Fragment {
      * Met à jour l'aperçu de l'icône de profil avec l'icône et la couleur sélectionnées
      */
     private void updateProfileIconPreview() {
+        Log.d(TAG, "updateProfileIconPreview: selectedIconIndex=" + selectedIconIndex + ", selectedColorIndex=" + selectedColorIndex);
         Drawable coloredIcon = ProfileIconHelper.getColoredProfileIcon(
                 requireContext(),
                 selectedIconIndex,
@@ -237,6 +240,7 @@ public class EditProfileFragment extends Fragment {
                         // Vérifier si l'objet utilisateur est valide
                         if (userProfile != null) {
                             Log.d(TAG, "Profil utilisateur chargé avec succès: " + userProfile.getUsername());
+                            Log.d(TAG, "Index chargés: iconIndex=" + userProfile.getProfileIconIndex() + ", colorIndex=" + userProfile.getProfileColorIndex());
                             
                             // Remplir le formulaire avec les données utilisateur
                             binding.usernameEdit.setText(userProfile.getUsername());
@@ -249,6 +253,7 @@ public class EditProfileFragment extends Fragment {
                             // Mettre à jour l'aperçu de l'icône
                             selectedIconIndex = userProfile.getProfileIconIndex();
                             selectedColorIndex = userProfile.getProfileColorIndex();
+                            Log.d(TAG, "Variables locales mises à jour: selectedIconIndex=" + selectedIconIndex + ", selectedColorIndex=" + selectedColorIndex);
                             updateProfileIconPreview();
                             
                             return; // Sortir de la méthode car tout est OK
@@ -285,6 +290,7 @@ public class EditProfileFragment extends Fragment {
                 binding.profileColorSpinner.setSelection(0);
                 selectedIconIndex = 0;
                 selectedColorIndex = 0;
+                Log.d(TAG, "Valeurs par défaut définies: selectedIconIndex=" + selectedIconIndex + ", selectedColorIndex=" + selectedColorIndex);
                 updateProfileIconPreview();
                 
                 // Sauvegarder immédiatement ce nouveau profil dans la base de données
@@ -321,15 +327,35 @@ public class EditProfileFragment extends Fragment {
             return;
         }
 
+        // Log les valeurs des index avant la mise à jour
+        Log.d(TAG, "saveProfile: avant mise à jour - selectedIconIndex=" + selectedIconIndex + ", selectedColorIndex=" + selectedColorIndex);
+
         // Disable button and show progress
         binding.saveProfileButton.setEnabled(false);
         binding.progressBar.setVisibility(View.VISIBLE);
+
+        // Vérifier si userProfile est null
+        if (userProfile == null) {
+            Log.e(TAG, "saveProfile: userProfile is null, creating new user");
+            userProfile = new User(
+                currentUser.getUid(),
+                username,
+                currentUser.getEmail()
+            );
+        }
 
         // Update user profile
         userProfile.setUsername(username);
         userProfile.setBio(bio);
         userProfile.setProfileIconIndex(selectedIconIndex);
         userProfile.setProfileColorIndex(selectedColorIndex);
+        
+        // S'assurer que l'ID est correctement défini
+        userProfile.setId(currentUser.getUid());
+        userProfile.setUserId(currentUser.getUid());
+
+        // Log les valeurs des index après la mise à jour de l'objet userProfile
+        Log.d(TAG, "saveProfile: après mise à jour de userProfile - iconIndex=" + userProfile.getProfileIconIndex() + ", colorIndex=" + userProfile.getProfileColorIndex());
 
         // Update display name in Firebase Auth
         UserProfileChangeRequest profileUpdates = new UserProfileChangeRequest.Builder()
@@ -424,11 +450,37 @@ public class EditProfileFragment extends Fragment {
     }
     
     private void saveUserToDatabase() {
+        if (userProfile == null) {
+            Log.e(TAG, "saveUserToDatabase: userProfile is null");
+            binding.progressBar.setVisibility(View.GONE);
+            binding.saveProfileButton.setEnabled(true);
+            Toast.makeText(requireContext(), "Erreur: profil utilisateur non disponible", Toast.LENGTH_SHORT).show();
+            return;
+        }
+        
         Log.d(TAG, "Saving user to database: " + userProfile.toString());
+        Log.d(TAG, "saveUserToDatabase: iconIndex=" + userProfile.getProfileIconIndex() + ", colorIndex=" + userProfile.getProfileColorIndex());
+        
+        // S'assurer que l'ID est correctement défini avant la sauvegarde
+        userProfile.setId(currentUser.getUid());
+        userProfile.setUserId(currentUser.getUid());
         
         usersRef.child(currentUser.getUid()).setValue(userProfile)
                 .addOnSuccessListener(aVoid -> {
                     Log.d(TAG, "User data saved successfully");
+                    Log.d(TAG, "Après sauvegarde: iconIndex=" + userProfile.getProfileIconIndex() + ", colorIndex=" + userProfile.getProfileColorIndex());
+                    
+                    // Vérifier que les données ont bien été sauvegardées en les relisant
+                    usersRef.child(currentUser.getUid()).get().addOnSuccessListener(dataSnapshot -> {
+                        if (dataSnapshot.exists()) {
+                            User savedUser = dataSnapshot.getValue(User.class);
+                            if (savedUser != null) {
+                                Log.d(TAG, "Données relues après sauvegarde: iconIndex=" + savedUser.getProfileIconIndex() + 
+                                        ", colorIndex=" + savedUser.getProfileColorIndex());
+                            }
+                        }
+                    });
+                    
                     binding.progressBar.setVisibility(View.GONE);
                     binding.saveProfileButton.setEnabled(true);
                     Toast.makeText(requireContext(), "Profil mis à jour avec succès", Toast.LENGTH_SHORT).show();

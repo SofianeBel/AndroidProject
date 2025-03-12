@@ -5,6 +5,7 @@ import java.util.Map;
 
 public class User {
     private String userId;
+    private String id; // Ajout d'un champ id pour la compatibilité avec Firebase
     private String username;
     private String email;
     private String profileImageUrl;
@@ -41,6 +42,7 @@ public class User {
 
     public User(String userId, String username, String email) {
         this.userId = userId;
+        this.id = userId; // Synchroniser id avec userId
         this.username = username;
         this.email = email;
         this.createdAt = System.currentTimeMillis();
@@ -58,6 +60,17 @@ public class User {
 
     public void setUserId(String userId) {
         this.userId = userId;
+        this.id = userId; // Synchroniser id avec userId
+    }
+    
+    // Getters et setters pour le champ id
+    public String getId() {
+        return id;
+    }
+    
+    public void setId(String id) {
+        this.id = id;
+        this.userId = id; // Synchroniser userId avec id
     }
 
     public String getUsername() {
@@ -108,11 +121,6 @@ public class User {
         this.createdAt = createdAt;
     }
 
-    // Alias method for getUserId() to maintain compatibility
-    public String getId() {
-        return getUserId();
-    }
-    
     // Getters and setters for followers and following
     public Map<String, Boolean> getFollowers() {
         if (followers == null) {
@@ -202,5 +210,19 @@ public class User {
         if (getFollowing().remove(userId) != null) {
             followingCount--;
         }
+    }
+    
+    @Override
+    public String toString() {
+        return "User{" +
+                "userId='" + userId + '\'' +
+                ", username='" + username + '\'' +
+                ", email='" + email + '\'' +
+                ", bio='" + bio + '\'' +
+                ", profileIconIndex=" + profileIconIndex +
+                ", profileColorIndex=" + profileColorIndex +
+                ", followersCount=" + followersCount +
+                ", followingCount=" + followingCount +
+                '}';
     }
 } 

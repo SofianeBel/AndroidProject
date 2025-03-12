@@ -180,20 +180,32 @@ public class ProfileFragment extends Fragment implements PostAdapter.OnPostInter
     }
 
     private void loadUserProfile() {
-        // Réinitialiser les champs
-        binding.nameText.setText("");
-        binding.usernameText.setText("");
-        binding.bioText.setText("");
+        // Réinitialiser les champs de texte pour éviter d'afficher des données obsolètes
+        if (binding != null) {
+            binding.nameText.setText("");
+            binding.usernameText.setText("");
+            binding.bioText.setText("");
+        } else {
+            Log.e(TAG, "loadUserProfile: binding is null");
+            return;
+        }
 
         usersRef.child(userId).addValueEventListener(new ValueEventListener() {
             @Override
             public void onDataChange(@NonNull DataSnapshot snapshot) {
+                // Vérifier si le binding est toujours valide
+                if (binding == null) {
+                    Log.e(TAG, "onDataChange: binding is null, fragment may have been destroyed");
+                    return;
+                }
+                
                 // Vérifier si les données existent
                 if (snapshot.exists()) {
                     try {
                         User user = snapshot.getValue(User.class);
                         if (user != null) {
                             Log.d(TAG, "Profil utilisateur chargé avec succès: " + user.getUsername());
+                            Log.d(TAG, "Index chargés: iconIndex=" + user.getProfileIconIndex() + ", colorIndex=" + user.getProfileColorIndex());
                             updateUI(user);
                             return; // Sortir de la méthode car tout est OK
                         }
@@ -246,6 +258,11 @@ public class ProfileFragment extends Fragment implements PostAdapter.OnPostInter
     }
 
     private void updateUI(User user) {
+        if (binding == null) {
+            Log.e(TAG, "updateUI: binding is null, fragment may have been destroyed");
+            return;
+        }
+        
         Log.d(TAG, "Updating UI with user data: " + user.getUserId());
         
         // Set user info
