@@ -33,6 +33,9 @@ public class HomeFragment extends Fragment implements PostAdapter.OnPostInteract
     private PostViewModel postViewModel;
     private PostAdapter postAdapter;
 
+    // Variable pour stocker le post auquel on répond
+    private Post replyToPost;
+
     @Nullable
     @Override
     public View onCreateView(@NonNull LayoutInflater inflater, @Nullable ViewGroup container, @Nullable Bundle savedInstanceState) {
@@ -65,23 +68,28 @@ public class HomeFragment extends Fragment implements PostAdapter.OnPostInteract
             // Initialize Toolbar
             setupToolbar();
             
-            // Initialize RecyclerView and adapter
+            // Initialize RecyclerView
             setupRecyclerView();
             
-            // Set up SwipeRefreshLayout
-            binding.swipeRefreshLayout.setOnRefreshListener(this::refreshPosts);
-            
-            // Set up FAB for creating new posts
-            binding.createPostFab.setOnClickListener(v -> navigateToCreatePost());
-            
-            // Observe posts from ViewModel
+            // Observe posts
             observePosts();
             
-            // Observe error messages
+            // Observe errors
             observeErrors();
             
-            // Load posts
-            refreshPosts();
+            // Setup SwipeRefreshLayout
+            binding.swipeRefreshLayout.setOnRefreshListener(this::refreshPosts);
+            
+            // Setup FAB
+            binding.createPostFab.setOnClickListener(v -> navigateToCreatePost());
+            
+            // Force refresh posts
+            Log.d(TAG, "Forcing refresh of posts");
+            binding.loadingProgressBar.setVisibility(View.VISIBLE);
+            postViewModel.loadPosts();
+            
+            // Afficher un message pour indiquer que le chargement est en cours
+            Toast.makeText(requireContext(), "Chargement des posts...", Toast.LENGTH_SHORT).show();
         } catch (Exception e) {
             Log.e(TAG, "Error in onViewCreated: " + e.getMessage(), e);
             Toast.makeText(requireContext(), "Error initializing home feed: " + e.getMessage(), Toast.LENGTH_SHORT).show();
@@ -260,9 +268,9 @@ public class HomeFragment extends Fragment implements PostAdapter.OnPostInteract
     @Override
     public void onPostRetweeted(Post post) {
         try {
-            // Simuler un retweet
-            Toast.makeText(requireContext(), "Post retweeted", Toast.LENGTH_SHORT).show();
-            // Dans une future version, nous pourrions implémenter la fonctionnalité de retweet
+            // Appeler la méthode du ViewModel pour retweeter le post
+            postViewModel.retweetPost(post);
+            Toast.makeText(requireContext(), "Post retweeté", Toast.LENGTH_SHORT).show();
         } catch (Exception e) {
             Log.e(TAG, "Error retweeting post: " + e.getMessage(), e);
             Toast.makeText(requireContext(), "Error retweeting post", Toast.LENGTH_SHORT).show();
@@ -280,6 +288,23 @@ public class HomeFragment extends Fragment implements PostAdapter.OnPostInteract
         } catch (Exception e) {
             Log.e(TAG, "Error sharing post: " + e.getMessage(), e);
             Toast.makeText(requireContext(), "Error sharing post", Toast.LENGTH_SHORT).show();
+        }
+    }
+
+    @Override
+    public void onPostReplied(Post post) {
+        try {
+            // Stocker le post auquel on répond
+            replyToPost = post;
+            
+            // Naviguer vers l'écran de création de post avec des informations supplémentaires
+            Bundle args = new Bundle();
+            args.putString("parent_post_id", post.getId());
+            args.putString("parent_username", post.getUsername());
+            Navigation.findNavController(requireView()).navigate(R.id.navigation_create_post, args);
+        } catch (Exception e) {
+            Log.e(TAG, "Error replying to post: " + e.getMessage(), e);
+            Toast.makeText(requireContext(), "Error replying to post", Toast.LENGTH_SHORT).show();
         }
     }
 

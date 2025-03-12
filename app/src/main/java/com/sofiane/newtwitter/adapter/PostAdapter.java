@@ -28,6 +28,7 @@ public class PostAdapter extends RecyclerView.Adapter<PostAdapter.PostViewHolder
         void onPostClicked(Post post);
         void onPostRetweeted(Post post);
         void onPostShared(Post post);
+        void onPostReplied(Post post);
     }
 
     public PostAdapter(OnPostInteractionListener listener) {
@@ -72,6 +73,10 @@ public class PostAdapter extends RecyclerView.Adapter<PostAdapter.PostViewHolder
         private TextView retweetCountTextView;
         private ImageView shareIcon;
         private ImageView moreOptionsButton;
+        private TextView retweetedByTextView;
+        private TextView replyingToTextView;
+        private View retweetedByLayout;
+        private View replyingToLayout;
 
         public PostViewHolder(@NonNull View itemView) {
             super(itemView);
@@ -88,8 +93,12 @@ public class PostAdapter extends RecyclerView.Adapter<PostAdapter.PostViewHolder
             retweetCountTextView = itemView.findViewById(R.id.retweetCountTextView);
             shareIcon = itemView.findViewById(R.id.shareIcon);
             moreOptionsButton = itemView.findViewById(R.id.moreOptionsButton);
+            
+            retweetedByTextView = itemView.findViewById(R.id.retweetedByTextView);
+            replyingToTextView = itemView.findViewById(R.id.replyingToTextView);
+            retweetedByLayout = itemView.findViewById(R.id.retweetedByLayout);
+            replyingToLayout = itemView.findViewById(R.id.replyingToLayout);
 
-            // Set click listeners
             itemView.setOnClickListener(v -> {
                 int position = getAdapterPosition();
                 if (position != RecyclerView.NO_POSITION && listener != null) {
@@ -121,32 +130,51 @@ public class PostAdapter extends RecyclerView.Adapter<PostAdapter.PostViewHolder
             commentIcon.setOnClickListener(v -> {
                 int position = getAdapterPosition();
                 if (position != RecyclerView.NO_POSITION && listener != null) {
-                    // Pour l'instant, on utilise le même callback que pour le clic sur le post
-                    listener.onPostClicked(posts.get(position));
+                    listener.onPostReplied(posts.get(position));
                 }
             });
         }
 
         public void bind(Post post) {
-            // Set profile image
             profileImageView.setImageResource(R.drawable.ic_person);
             
-            // Set user info
-            usernameTextView.setText(post.getUsername());
-            handleTextView.setText("@" + post.getUsername().toLowerCase().replace(" ", ""));
+            if (post.isRetweet() && retweetedByLayout != null) {
+                retweetedByLayout.setVisibility(View.VISIBLE);
+                retweetedByTextView.setText(post.getUsername() + " a retweeté");
+                
+                usernameTextView.setText(post.getOriginalUsername());
+                handleTextView.setText("@" + post.getOriginalUsername().toLowerCase().replace(" ", ""));
+            } else {
+                if (retweetedByLayout != null) {
+                    retweetedByLayout.setVisibility(View.GONE);
+                }
+                
+                usernameTextView.setText(post.getUsername());
+                handleTextView.setText("@" + post.getUsername().toLowerCase().replace(" ", ""));
+            }
+            
+            if (post.isReply() && replyingToLayout != null) {
+                replyingToLayout.setVisibility(View.VISIBLE);
+                replyingToTextView.setText("En réponse à @" + post.getParentId());
+            } else {
+                if (replyingToLayout != null) {
+                    replyingToLayout.setVisibility(View.GONE);
+                }
+            }
+            
             timeTextView.setText(post.getRelativeTime());
             
-            // Set content
             contentTextView.setText(post.getContent());
             
-            // Set counters
             likeCountTextView.setText(String.valueOf(post.getLikeCount()));
             commentCountTextView.setText(String.valueOf(post.getCommentCount()));
+            retweetCountTextView.setText(String.valueOf(post.getRetweetCount()));
             
-            // Pour les compteurs qui n'existent pas encore dans le modèle Post
-            // On utilise des valeurs aléatoires pour simuler
-            int retweetCount = random.nextInt(100);
-            retweetCountTextView.setText(String.valueOf(retweetCount));
+            if (post.isRetweet()) {
+                retweetIcon.setColorFilter(itemView.getContext().getResources().getColor(R.color.twitter_blue));
+            } else {
+                retweetIcon.setColorFilter(itemView.getContext().getResources().getColor(R.color.twitter_dark_gray));
+            }
         }
     }
 } 

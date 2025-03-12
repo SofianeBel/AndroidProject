@@ -1,0 +1,44 @@
+{
+  "rules": {
+    "posts": {
+      ".read": true,
+      ".write": "auth != null",
+      "$postId": {
+        ".read": true,
+        ".write": "auth != null && (newData.child('userId').val() === auth.uid || data.child('userId').val() === auth.uid)"
+      }
+    },
+    "likes": {
+      ".read": true,
+      ".write": "auth != null",
+      "$likeId": {
+        ".read": true,
+        ".write": "auth != null && $likeId.contains(auth.uid)"
+      }
+    },
+    "retweets": {
+      ".read": true,
+      ".write": "auth != null",
+      "$retweetId": {
+        ".read": true,
+        ".write": "auth != null && $retweetId.contains(auth.uid)"
+      }
+    },
+    "users": {
+      ".read": true,
+      ".write": "auth != null",
+      "$userId": {
+        ".read": true,
+        ".write": "auth != null && $userId === auth.uid"
+      }
+    },
+    "comments": {
+      ".read": true,
+      ".write": "auth != null",
+      "$commentId": {
+        ".read": true,
+        ".write": "auth != null && (newData.child('userId').val() === auth.uid || data.child('userId').val() === auth.uid)"
+      }
+    }
+  }
+} 

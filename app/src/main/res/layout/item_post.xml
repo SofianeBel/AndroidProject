@@ -15,6 +15,41 @@
         android:background="#E1E8ED"
         app:layout_constraintBottom_toBottomOf="parent"/>
 
+    <!-- Layout pour afficher "X a retweeté" -->
+    <androidx.constraintlayout.widget.ConstraintLayout
+        android:id="@+id/retweetedByLayout"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:visibility="gone"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent">
+
+        <ImageView
+            android:id="@+id/retweetIcon2"
+            android:layout_width="16dp"
+            android:layout_height="16dp"
+            android:src="@android:drawable/ic_menu_rotate"
+            android:contentDescription="@string/retweet"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toTopOf="parent"
+            app:layout_constraintBottom_toBottomOf="parent"
+            app:tint="#657786" />
+
+        <TextView
+            android:id="@+id/retweetedByTextView"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="8dp"
+            android:textSize="12sp"
+            android:textColor="#657786"
+            app:layout_constraintStart_toEndOf="@id/retweetIcon2"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintTop_toTopOf="parent"
+            app:layout_constraintBottom_toBottomOf="parent"
+            tools:text="Username a retweeté" />
+    </androidx.constraintlayout.widget.ConstraintLayout>
+
     <de.hdodenhof.circleimageview.CircleImageView
         android:id="@+id/profileImageView"
         android:layout_width="48dp"
@@ -22,7 +57,7 @@
         android:src="@drawable/ic_person"
         android:contentDescription="@string/app_name"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toTopOf="parent" />
+        app:layout_constraintTop_toBottomOf="@id/retweetedByLayout" />
 
     <TextView
         android:id="@+id/usernameTextView"
@@ -77,11 +112,34 @@
         android:layout_width="20dp"
         android:layout_height="20dp"
         android:src="@android:drawable/ic_menu_more"
-        android:tint="#657786"
-        android:contentDescription="More options"
+        android:contentDescription="@string/app_name"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintTop_toTopOf="@id/usernameTextView"
-        app:layout_constraintBottom_toBottomOf="@id/usernameTextView" />
+        app:layout_constraintBottom_toBottomOf="@id/usernameTextView"
+        app:tint="#657786" />
+
+    <!-- Layout pour afficher "En réponse à @username" -->
+    <androidx.constraintlayout.widget.ConstraintLayout
+        android:id="@+id/replyingToLayout"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:visibility="gone"
+        android:layout_marginTop="4dp"
+        app:layout_constraintStart_toStartOf="@id/usernameTextView"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/usernameTextView">
+
+        <TextView
+            android:id="@+id/replyingToTextView"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:textSize="14sp"
+            android:textColor="#657786"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toTopOf="parent"
+            app:layout_constraintBottom_toBottomOf="parent"
+            tools:text="En réponse à @username" />
+    </androidx.constraintlayout.widget.ConstraintLayout>
 
     <TextView
         android:id="@+id/contentTextView"
@@ -93,7 +151,7 @@
         android:lineSpacingExtra="4dp"
         app:layout_constraintStart_toStartOf="@id/usernameTextView"
         app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintTop_toBottomOf="@id/usernameTextView"
+        app:layout_constraintTop_toBottomOf="@id/replyingToLayout"
         tools:text="This is a sample post content that could be quite long and span multiple lines to demonstrate how the layout handles longer text." />
 
     <androidx.constraintlayout.widget.ConstraintLayout
@@ -112,11 +170,11 @@
             android:layout_width="18dp"
             android:layout_height="18dp"
             android:src="@android:drawable/ic_dialog_email"
-            android:tint="#657786"
-            android:contentDescription="Comment"
+            android:contentDescription="@string/comment"
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toTopOf="parent"
-            app:layout_constraintBottom_toBottomOf="parent" />
+            app:layout_constraintBottom_toBottomOf="parent"
+            app:tint="#657786" />
 
         <TextView
             android:id="@+id/commentCountTextView"
@@ -137,11 +195,11 @@
             android:layout_height="18dp"
             android:layout_marginStart="48dp"
             android:src="@android:drawable/ic_menu_rotate"
-            android:tint="#657786"
-            android:contentDescription="Retweet"
+            android:contentDescription="@string/retweet"
             app:layout_constraintStart_toEndOf="@id/commentCountTextView"
             app:layout_constraintTop_toTopOf="parent"
-            app:layout_constraintBottom_toBottomOf="parent" />
+            app:layout_constraintBottom_toBottomOf="parent"
+            app:tint="#657786" />
 
         <TextView
             android:id="@+id/retweetCountTextView"
@@ -162,11 +220,11 @@
             android:layout_height="18dp"
             android:layout_marginStart="48dp"
             android:src="@android:drawable/star_big_off"
-            android:tint="#657786"
-            android:contentDescription="Like"
+            android:contentDescription="@string/like"
             app:layout_constraintStart_toEndOf="@id/retweetCountTextView"
             app:layout_constraintTop_toTopOf="parent"
-            app:layout_constraintBottom_toBottomOf="parent" />
+            app:layout_constraintBottom_toBottomOf="parent"
+            app:tint="#657786" />
 
         <TextView
             android:id="@+id/likeCountTextView"
@@ -187,11 +245,11 @@
             android:layout_height="18dp"
             android:layout_marginStart="48dp"
             android:src="@android:drawable/ic_menu_share"
-            android:tint="#657786"
-            android:contentDescription="Share"
+            android:contentDescription="@string/app_name"
             app:layout_constraintStart_toEndOf="@id/likeCountTextView"
             app:layout_constraintTop_toTopOf="parent"
-            app:layout_constraintBottom_toBottomOf="parent" />
+            app:layout_constraintBottom_toBottomOf="parent"
+            app:tint="#657786" />
 
     </androidx.constraintlayout.widget.ConstraintLayout>
 

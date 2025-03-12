@@ -12,6 +12,18 @@
     <string name="failed_to_create_post">Failed to create post: %1$s</string>
     <string name="failed_to_upload_image">Failed to upload image: %1$s</string>
     
+    <!-- Reply and Retweet -->
+    <string name="reply_to_post">Reply to Post</string>
+    <string name="replying_to">Replying to @%1$s</string>
+    <string name="write_your_reply">Write your reply…</string>
+    <string name="reply">Reply</string>
+    <string name="reply_created_successfully">Reply sent successfully</string>
+    <string name="failed_to_create_reply">Failed to send reply: %1$s</string>
+    <string name="retweet">Retweet</string>
+    <string name="retweeted">Retweeted</string>
+    <string name="retweeted_by">%1$s retweeted</string>
+    <string name="undo_retweet">Undo Retweet</string>
+    
     <!-- Home Fragment -->
     <string name="home_feed">Home Feed</string>
     <string name="no_posts_available">Soyez le premier à poster !</string>

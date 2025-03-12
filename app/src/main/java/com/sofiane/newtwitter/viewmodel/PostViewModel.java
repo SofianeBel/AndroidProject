@@ -57,6 +57,31 @@ public class PostViewModel extends ViewModel {
         postRepository.createPost(userId, username, content);
     }
 
+    // Méthode pour créer une réponse à un post
+    public void createReply(String content, String parentPostId) {
+        if (content == null || content.trim().isEmpty()) {
+            errorMessage.setValue("Reply content cannot be empty");
+            return;
+        }
+
+        if (parentPostId == null || parentPostId.trim().isEmpty()) {
+            errorMessage.setValue("Parent post ID cannot be empty");
+            return;
+        }
+
+        postRepository.createReply(content, parentPostId);
+    }
+
+    // Méthode pour retweeter un post
+    public void retweetPost(Post post) {
+        if (post == null) {
+            errorMessage.setValue("Cannot retweet null post");
+            return;
+        }
+
+        postRepository.retweetPost(post);
+    }
+
     public void likePost(String postId) {
         postRepository.likePost(postId);
     }

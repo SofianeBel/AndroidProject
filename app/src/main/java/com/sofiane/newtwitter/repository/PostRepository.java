@@ -28,12 +28,13 @@ public class PostRepository {
     private static final String TAG = "PostRepository";
     private static PostRepository instance;
     
-    // Flag to track if sample posts have been created
+    // Réinitialiser cette variable pour recréer des posts d'exemple
     private boolean samplePostsCreated = false;
     
     // Firebase references
     private final DatabaseReference postsRef;
     private final DatabaseReference likesRef;
+    private final DatabaseReference retweetsRef;
     
     // LiveData
     private final MutableLiveData<List<Post>> allPostsLiveData = new MutableLiveData<>();
@@ -44,6 +45,7 @@ public class PostRepository {
         FirebaseDatabase database = FirebaseDatabase.getInstance("https://newtwitter-65ad1-default-rtdb.europe-west1.firebasedatabase.app");
         postsRef = database.getReference("posts");
         likesRef = database.getReference("likes");
+        retweetsRef = database.getReference("retweets");
         
         // Load initial data
         loadAllPosts();
@@ -84,6 +86,13 @@ public class PostRepository {
                         // Loop through all posts
                         for (DataSnapshot postSnapshot : dataSnapshot.getChildren()) {
                             try {
+                                Log.d(TAG, "Trying to parse post with key: " + postSnapshot.getKey());
+                                // Afficher les données brutes pour le débogage
+                                Map<String, Object> rawData = (Map<String, Object>) postSnapshot.getValue();
+                                if (rawData != null) {
+                                    Log.d(TAG, "Raw data: " + rawData.toString());
+                                }
+                                
                                 Post post = postSnapshot.getValue(Post.class);
                                 if (post != null) {
                                     posts.add(post); // Add to list
@@ -436,6 +445,191 @@ public class PostRepository {
         } catch (Exception e) {
             Log.e(TAG, "Error deleting post: " + e.getMessage(), e);
             errorMessageLiveData.setValue("Error deleting post: " + e.getMessage());
+        }
+    }
+
+    // Créer une réponse à un post
+    public void createReply(String content, String parentPostId) {
+        try {
+            FirebaseUser currentUser = FirebaseAuth.getInstance().getCurrentUser();
+            if (currentUser == null) {
+                errorMessageLiveData.setValue("You must be logged in to reply");
+                return;
+            }
+            
+            String userId = currentUser.getUid();
+            String username = currentUser.getDisplayName();
+            if (username == null || username.isEmpty()) {
+                username = "User" + userId.substring(0, 5);
+            }
+            
+            // Generate a unique key for the new reply
+            String replyId = postsRef.push().getKey();
+            if (replyId == null) {
+                errorMessageLiveData.setValue("Failed to create reply ID");
+                return;
+            }
+            
+            // Create reply object
+            Post reply = new Post(
+                replyId,
+                userId,
+                username,
+                content,
+                null, // No image URL for now
+                new Date(),
+                0, // Initial like count
+                parentPostId // Parent post ID
+            );
+            
+            // Save reply to Firebase
+            postsRef.child(replyId).setValue(reply)
+                .addOnSuccessListener(aVoid -> {
+                    Log.d(TAG, "Reply created successfully with ID: " + replyId);
+                    
+                    // Increment comment count on parent post
+                    postsRef.child(parentPostId).child("commentCount").addListenerForSingleValueEvent(
+                        new ValueEventListener() {
+                            @Override
+                            public void onDataChange(@NonNull DataSnapshot snapshot) {
+                                Integer currentComments = snapshot.getValue(Integer.class);
+                                if (currentComments != null) {
+                                    postsRef.child(parentPostId).child("commentCount").setValue(currentComments + 1);
+                                } else {
+                                    postsRef.child(parentPostId).child("commentCount").setValue(1);
+                                }
+                            }
+
+                            @Override
+                            public void onCancelled(@NonNull DatabaseError error) {
+                                Log.e(TAG, "Error updating comment count: " + error.getMessage());
+                            }
+                        });
+                })
+                .addOnFailureListener(e -> {
+                    Log.e(TAG, "Error creating reply: " + e.getMessage(), e);
+                    errorMessageLiveData.setValue("Failed to create reply: " + e.getMessage());
+                });
+        } catch (Exception e) {
+            Log.e(TAG, "Error creating reply: " + e.getMessage(), e);
+            errorMessageLiveData.setValue("Error creating reply: " + e.getMessage());
+        }
+    }
+
+    // Retweeter un post
+    public void retweetPost(Post originalPost) {
+        try {
+            FirebaseUser currentUser = FirebaseAuth.getInstance().getCurrentUser();
+            if (currentUser == null) {
+                errorMessageLiveData.setValue("You must be logged in to retweet");
+                return;
+            }
+            
+            final String userId = currentUser.getUid();
+            final String username;
+            if (currentUser.getDisplayName() == null || currentUser.getDisplayName().isEmpty()) {
+                username = "User" + userId.substring(0, 5);
+            } else {
+                username = currentUser.getDisplayName();
+            }
+            
+            // Vérifier si l'utilisateur a déjà retweeté ce post
+            String retweetKey = originalPost.getId() + "_" + userId + "_retweet";
+            retweetsRef.child(retweetKey).addListenerForSingleValueEvent(new ValueEventListener() {
+                @Override
+                public void onDataChange(@NonNull DataSnapshot dataSnapshot) {
+                    if (dataSnapshot.exists()) {
+                        // L'utilisateur a déjà retweeté ce post, annuler le retweet
+                        retweetsRef.child(retweetKey).removeValue();
+                        
+                        // Supprimer le retweet
+                        String retweetId = dataSnapshot.getValue(String.class);
+                        if (retweetId != null) {
+                            postsRef.child(retweetId).removeValue();
+                        }
+                        
+                        // Décrémenter le compteur de retweets
+                        postsRef.child(originalPost.getId()).child("retweetCount").addListenerForSingleValueEvent(
+                            new ValueEventListener() {
+                                @Override
+                                public void onDataChange(@NonNull DataSnapshot snapshot) {
+                                    Integer currentRetweets = snapshot.getValue(Integer.class);
+                                    if (currentRetweets != null && currentRetweets > 0) {
+                                        postsRef.child(originalPost.getId()).child("retweetCount").setValue(currentRetweets - 1);
+                                    }
+                                }
+
+                                @Override
+                                public void onCancelled(@NonNull DatabaseError error) {
+                                    Log.e(TAG, "Error updating retweet count: " + error.getMessage());
+                                }
+                            });
+                    } else {
+                        // L'utilisateur n'a pas encore retweeté ce post, créer un retweet
+                        
+                        // Generate a unique key for the new retweet
+                        String retweetId = postsRef.push().getKey();
+                        if (retweetId == null) {
+                            errorMessageLiveData.setValue("Failed to create retweet ID");
+                            return;
+                        }
+                        
+                        // Create retweet object
+                        Post retweet = new Post(
+                            retweetId,
+                            userId,
+                            username,
+                            originalPost.getId(),
+                            originalPost.getUserId(),
+                            originalPost.getUsername(),
+                            originalPost.getContent(),
+                            originalPost.getImageUrl(),
+                            new Date()
+                        );
+                        
+                        // Save retweet to Firebase
+                        postsRef.child(retweetId).setValue(retweet)
+                            .addOnSuccessListener(aVoid -> {
+                                Log.d(TAG, "Retweet created successfully with ID: " + retweetId);
+                                
+                                // Enregistrer la référence du retweet
+                                retweetsRef.child(retweetKey).setValue(retweetId);
+                                
+                                // Incrémenter le compteur de retweets
+                                postsRef.child(originalPost.getId()).child("retweetCount").addListenerForSingleValueEvent(
+                                    new ValueEventListener() {
+                                        @Override
+                                        public void onDataChange(@NonNull DataSnapshot snapshot) {
+                                            Integer currentRetweets = snapshot.getValue(Integer.class);
+                                            if (currentRetweets != null) {
+                                                postsRef.child(originalPost.getId()).child("retweetCount").setValue(currentRetweets + 1);
+                                            } else {
+                                                postsRef.child(originalPost.getId()).child("retweetCount").setValue(1);
+                                            }
+                                        }
+
+                                        @Override
+                                        public void onCancelled(@NonNull DatabaseError error) {
+                                            Log.e(TAG, "Error updating retweet count: " + error.getMessage());
+                                        }
+                                    });
+                            })
+                            .addOnFailureListener(e -> {
+                                Log.e(TAG, "Error creating retweet: " + e.getMessage(), e);
+                                errorMessageLiveData.setValue("Failed to create retweet: " + e.getMessage());
+                            });
+                    }
+                }
+
+                @Override
+                public void onCancelled(@NonNull DatabaseError databaseError) {
+                    Log.e(TAG, "Database error: " + databaseError.getMessage());
+                    errorMessageLiveData.setValue("Database error: " + databaseError.getMessage());
+                }
+            });
+        } catch (Exception e) {
+            Log.e(TAG, "Error retweeting post: " + e.getMessage(), e);
+            errorMessageLiveData.setValue("Error retweeting post: " + e.getMessage());
         }
     }
 } 

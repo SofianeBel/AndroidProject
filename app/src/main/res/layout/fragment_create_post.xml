@@ -18,6 +18,29 @@
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent" />
 
+    <!-- Layout pour afficher "En réponse à @username" -->
+    <androidx.constraintlayout.widget.ConstraintLayout
+        android:id="@+id/replyingToLayout"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:visibility="gone"
+        android:layout_marginTop="8dp"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/title_text">
+
+        <TextView
+            android:id="@+id/replyingToTextView"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:textSize="16sp"
+            android:textColor="#657786"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toTopOf="parent"
+            app:layout_constraintBottom_toBottomOf="parent"
+            tools:text="En réponse à @username" />
+    </androidx.constraintlayout.widget.ConstraintLayout>
+
     <com.google.android.material.textfield.TextInputLayout
         android:id="@+id/post_content_layout"
         style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
@@ -27,7 +50,7 @@
         android:hint="@string/whats_on_your_mind"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/title_text">
+        app:layout_constraintTop_toBottomOf="@+id/replyingToLayout">
 
         <com.google.android.material.textfield.TextInputEditText
             android:id="@+id/post_content_edit"

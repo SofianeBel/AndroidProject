@@ -38,6 +38,11 @@ public class CreatePostFragment extends Fragment {
     private Uri selectedImageUri = null;
     private PostViewModel postViewModel;
     
+    // Variables pour les réponses
+    private String parentPostId;
+    private String parentUsername;
+    private boolean isReply = false;
+    
     private final ActivityResultLauncher<String> getContent = registerForActivityResult(
             new ActivityResultContracts.GetContent(),
             uri -> {
@@ -66,6 +71,23 @@ public class CreatePostFragment extends Fragment {
         // Initialize ViewModel
         postViewModel = new ViewModelProvider(requireActivity()).get(PostViewModel.class);
         
+        // Récupérer les arguments pour les réponses
+        Bundle args = getArguments();
+        if (args != null) {
+            parentPostId = args.getString("parent_post_id");
+            parentUsername = args.getString("parent_username");
+            isReply = parentPostId != null && !parentPostId.isEmpty();
+        }
+        
+        // Configurer l'interface pour les réponses
+        if (isReply) {
+            binding.titleText.setText(R.string.reply_to_post);
+            binding.replyingToLayout.setVisibility(View.VISIBLE);
+            binding.replyingToTextView.setText(getString(R.string.replying_to, parentUsername));
+            binding.postButton.setText(R.string.reply);
+            binding.postContentEdit.setHint(R.string.write_your_reply);
+        }
+        
         // Observe error messages
         postViewModel.getErrorMessage().observe(getViewLifecycleOwner(), errorMessage -> {
             if (errorMessage != null && !errorMessage.isEmpty()) {
@@ -91,8 +113,92 @@ public class CreatePostFragment extends Fragment {
                 return;
             }
             
-            createPost(content);
+            if (isReply) {
+                createReply(content);
+            } else {
+                createPost(content);
+            }
         });
+    }
+    
+    private void createReply(String content) {
+        if (auth.getCurrentUser() == null) {
+            Toast.makeText(requireContext(), getString(R.string.must_be_logged_in), Toast.LENGTH_SHORT).show();
+            return;
+        }
+        
+        binding.postProgress.setVisibility(View.VISIBLE);
+        binding.postButton.setEnabled(false);
+        
+        if (selectedImageUri != null) {
+            // Upload image first
+            String replyId = UUID.randomUUID().toString();
+            StorageReference storageRef = storage.getReference().child("post_images/" + replyId);
+            storageRef.putFile(selectedImageUri)
+                    .addOnSuccessListener(taskSnapshot -> 
+                        storageRef.getDownloadUrl().addOnSuccessListener(downloadUri -> {
+                            // Create reply with image URL
+                            createReplyWithImage(content, downloadUri.toString());
+                            clearForm();
+                            navigateBack();
+                        })
+                    )
+                    .addOnFailureListener(e -> {
+                        binding.postProgress.setVisibility(View.GONE);
+                        binding.postButton.setEnabled(true);
+                        Toast.makeText(requireContext(), getString(R.string.failed_to_upload_image, e.getMessage()), Toast.LENGTH_SHORT).show();
+                    });
+        } else {
+            // No image to upload, create reply directly
+            postViewModel.createReply(content, parentPostId);
+            binding.postProgress.setVisibility(View.GONE);
+            binding.postButton.setEnabled(true);
+            Toast.makeText(requireContext(), getString(R.string.reply_created_successfully), Toast.LENGTH_SHORT).show();
+            clearForm();
+            navigateBack();
+        }
+    }
+    
+    private void createReplyWithImage(String content, String imageUrl) {
+        String userId = auth.getCurrentUser().getUid();
+        String username = auth.getCurrentUser().getDisplayName();
+        if (username == null || username.isEmpty()) {
+            username = "User" + userId.substring(0, 5);
+        }
+        
+        // Generate a unique key for the new reply
+        String replyId = postsRef.push().getKey();
+        if (replyId == null) {
+            Toast.makeText(requireContext(), "Failed to create reply ID", Toast.LENGTH_SHORT).show();
+            binding.postProgress.setVisibility(View.GONE);
+            binding.postButton.setEnabled(true);
+            return;
+        }
+        
+        // Create reply object
+        Post reply = new Post(
+            replyId,
+            userId,
+            username,
+            content,
+            imageUrl,
+            new Date(),
+            0, // Initial like count
+            parentPostId // Parent post ID
+        );
+        
+        // Save reply to Firebase
+        postsRef.child(replyId).setValue(reply)
+            .addOnSuccessListener(aVoid -> {
+                binding.postProgress.setVisibility(View.GONE);
+                binding.postButton.setEnabled(true);
+                Toast.makeText(requireContext(), getString(R.string.reply_created_successfully), Toast.LENGTH_SHORT).show();
+            })
+            .addOnFailureListener(e -> {
+                binding.postProgress.setVisibility(View.GONE);
+                binding.postButton.setEnabled(true);
+                Toast.makeText(requireContext(), getString(R.string.failed_to_create_reply, e.getMessage()), Toast.LENGTH_SHORT).show();
+            });
     }
     
     private void createPost(String content) {
