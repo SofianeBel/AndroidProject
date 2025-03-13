@@ -2,7 +2,35 @@
 
 Une application Android de microblogging inspirée de Twitter, permettant aux utilisateurs de partager des posts, d'interagir avec d'autres utilisateurs et de gérer leur profil.
 
+## Présentation de l'application
+
+### Captures d'écran
+
+<div align="center">
+  <img src="ScreenshotPresentation.jpg" alt="Capture d'écran de l'écran d'accueil" width="300"/>
+  <img src="ScreenshotPresentation2.jpg" alt="Capture d'écran du détail d'un post" width="300"/>
+</div>
+
+### Vidéo de démonstration
+
+[Cliquez ici pour voir la vidéo de démonstration](Présentation_App.mp4)
+
 ## Fonctionnalités
+
+### Version 1.5.6
+- **Suppression des données mock** : Élimination des données de test du code de production
+- **Amélioration de la qualité du code** : Nettoyage du code et suppression des fonctionnalités de test
+- **Documentation complète** : Ajout de documentation JavaDoc pour tous les fragments et classes principales
+
+### Version 1.5.5
+- **Documentation des fragments** : Ajout de documentation JavaDoc pour tous les fragments
+- **Amélioration de la maintenabilité** : Clarification du code avec des commentaires détaillés
+- **Standardisation** : Utilisation cohérente du format JavaDoc dans tous les fragments
+
+### Version 1.5.4
+- **Documentation des ViewModels** : Ajout de documentation JavaDoc pour les classes ViewModel
+- **Amélioration de la maintenabilité** : Clarification du code avec des commentaires détaillés
+- **Standardisation** : Utilisation cohérente du format JavaDoc dans tous les ViewModels
 
 ### Version 1.5.3
 - **Correction de la navigation** : Résolution des problèmes de navigation entre les profils utilisateurs
@@ -99,30 +127,52 @@ Si vous rencontrez un problème de chargement infini dans l'écran d'accueil, su
 ```json
 {
   "rules": {
-    ".read": true,
-    ".write": true,
     "posts": {
       ".read": true,
-      ".write": true,
+      ".write": "auth != null",
       "$postId": {
         ".read": true,
-        ".write": true
+        ".write": "auth != null && (newData.child('userId').val() === auth.uid || data.child('userId').val() === auth.uid)"
       }
     },
     "likes": {
       ".read": true,
-      ".write": true,
+      ".write": "auth != null",
       "$likeId": {
         ".read": true,
-        ".write": true
+        ".write": "auth != null && $likeId.contains(auth.uid)"
+      }
+    },
+    "retweets": {
+      ".read": true,
+      ".write": "auth != null",
+      "$retweetId": {
+        ".read": true,
+        ".write": "auth != null && $retweetId.contains(auth.uid)"
       }
     },
     "users": {
       ".read": true,
-      ".write": true,
+      ".write": "auth != null",
       "$userId": {
         ".read": true,
-        ".write": true
+        ".write": "auth != null && $userId === auth.uid"
+      }
+    },
+    "comments": {
+      ".read": true,
+      ".write": "auth != null",
+      "$commentId": {
+        ".read": true,
+        ".write": "auth != null && (newData.child('userId').val() === auth.uid || data.child('userId').val() === auth.uid)"
+      }
+    },
+    "follows": {
+      ".read": true,
+      ".write": "auth != null",
+      "$userId": {
+        ".read": true,
+        ".write": "auth != null && ($userId === auth.uid || root.child('follows').child(auth.uid).child('following').child($userId).exists())"
       }
     }
   }
@@ -174,4 +224,4 @@ Si le problème persiste, vérifiez les logs de l'application pour identifier d'
 
 ## Version
 
-Version actuelle : 1.5.3 
+Version actuelle : 1.5.6 
