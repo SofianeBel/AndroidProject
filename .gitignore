@@ -1,15 +1,60 @@
+# Fichiers et dossiers générés par Android Studio
 *.iml
 .gradle
 /local.properties
-/.idea/caches
-/.idea/libraries
-/.idea/modules.xml
-/.idea/workspace.xml
-/.idea/navEditor.xml
-/.idea/assetWizardSettings.xml
+/.idea/*
+!/.idea/codeStyles/
+!/.idea/runConfigurations/
 .DS_Store
 /build
 /captures
 .externalNativeBuild
 .cxx
 local.properties
+
+# Fichiers de build
+**/build/
+**/out/
+
+# Fichiers de configuration spécifiques à l'utilisateur
+**/*.iml
+**/*.iws
+**/*.ipr
+**/.idea/workspace.xml
+**/.idea/tasks.xml
+**/.idea/gradle.xml
+**/.idea/assetWizardSettings.xml
+**/.idea/dictionaries
+**/.idea/libraries
+**/.idea/caches
+**/.idea/modules.xml
+**/.idea/navEditor.xml
+
+# Fichiers générés par Gradle
+.gradle/
+build/
+app/build/
+gradle-app.setting
+!gradle-wrapper.jar
+.gradletasknamecache
+
+# Fichiers générés par le système d'exploitation
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# Fichiers de log
+*.log
+
+# Fichiers de configuration Firebase
+google-services.json
+GoogleService-Info.plist
+
+# Fichiers de clés et secrets
+*.keystore
+*.jks
+key.properties

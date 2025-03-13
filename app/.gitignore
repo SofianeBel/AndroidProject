@@ -1,1 +1,13 @@
 /build
+/release
+/debug
+/generated
+*.apk
+*.aab
+*.ap_
+*.dex
+output.json
+output-metadata.json
+/captures
+.externalNativeBuild
+.cxx
