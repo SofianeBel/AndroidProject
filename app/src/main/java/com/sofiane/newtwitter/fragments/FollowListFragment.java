@@ -31,6 +31,12 @@ import com.sofiane.newtwitter.utils.FollowManager;
 import java.util.ArrayList;
 import java.util.List;
 
+/**
+ * Fragment affichant une liste d'utilisateurs suivis ou de followers.
+ * Ce fragment présente soit la liste des utilisateurs qui suivent un utilisateur spécifique (followers),
+ * soit la liste des utilisateurs suivis par un utilisateur spécifique (following).
+ * Il permet également de naviguer vers les profils des utilisateurs affichés.
+ */
 public class FollowListFragment extends Fragment implements UserAdapter.OnUserInteractionListener {
     private static final String TAG = "FollowListFragment";
     private static final String ARG_USER_ID = "userId";
@@ -75,6 +81,14 @@ public class FollowListFragment extends Fragment implements UserAdapter.OnUserIn
         followManager = new FollowManager();
     }
     
+    /**
+     * Crée et retourne la vue associée au fragment.
+     *
+     * @param inflater L'inflater utilisé pour gonfler la vue
+     * @param container Le conteneur parent
+     * @param savedInstanceState L'état sauvegardé du fragment
+     * @return La vue racine du fragment
+     */
     @Nullable
     @Override
     public View onCreateView(@NonNull LayoutInflater inflater, @Nullable ViewGroup container, @Nullable Bundle savedInstanceState) {
@@ -82,6 +96,13 @@ public class FollowListFragment extends Fragment implements UserAdapter.OnUserIn
         return binding.getRoot();
     }
     
+    /**
+     * Initialise les composants de l'interface utilisateur et configure les observateurs
+     * après que la vue a été créée.
+     *
+     * @param view La vue racine du fragment
+     * @param savedInstanceState L'état sauvegardé du fragment
+     */
     @Override
     public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
         super.onViewCreated(view, savedInstanceState);
@@ -119,6 +140,10 @@ public class FollowListFragment extends Fragment implements UserAdapter.OnUserIn
         });
     }
     
+    /**
+     * Configure la barre d'outils du fragment.
+     * Définit le titre en fonction du type de liste (followers ou following).
+     */
     private void updateTitle() {
         if (username != null) {
             String title;
@@ -133,6 +158,9 @@ public class FollowListFragment extends Fragment implements UserAdapter.OnUserIn
         }
     }
     
+    /**
+     * Charge la liste des utilisateurs en fonction du type de liste (followers ou following).
+     */
     private void loadUsers() {
         binding.progressBar.setVisibility(View.VISIBLE);
         binding.emptyView.setVisibility(View.GONE);
@@ -172,6 +200,11 @@ public class FollowListFragment extends Fragment implements UserAdapter.OnUserIn
         });
     }
     
+    /**
+     * Charge les détails des utilisateurs à partir de leurs identifiants.
+     *
+     * @param userIds Liste des identifiants des utilisateurs à charger
+     */
     private void loadUserDetails(List<String> userIds) {
         List<User> users = new ArrayList<>();
         final int[] loadedCount = {0};
@@ -228,6 +261,12 @@ public class FollowListFragment extends Fragment implements UserAdapter.OnUserIn
         binding.emptyView.setText(listType == TYPE_FOLLOWERS ? R.string.no_followers : R.string.no_following);
     }
     
+    /**
+     * Appelé lorsque l'utilisateur clique sur un profil utilisateur.
+     * Navigue vers le fragment de profil de l'utilisateur.
+     *
+     * @param user L'utilisateur cliqué
+     */
     @Override
     public void onUserClicked(User user) {
         // Navigate to user profile
@@ -265,6 +304,9 @@ public class FollowListFragment extends Fragment implements UserAdapter.OnUserIn
         }
     }
     
+    /**
+     * Nettoie les ressources lorsque la vue est détruite.
+     */
     @Override
     public void onDestroyView() {
         super.onDestroyView();

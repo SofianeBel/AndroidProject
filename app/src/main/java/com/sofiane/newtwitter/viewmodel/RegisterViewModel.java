@@ -10,6 +10,12 @@ import com.google.firebase.auth.FirebaseUser;
 import com.google.firebase.auth.UserProfileChangeRequest;
 import com.google.firebase.firestore.FirebaseFirestore;
 
+/**
+ * ViewModel responsable de la gestion de l'inscription des utilisateurs.
+ * Cette classe gère le processus d'inscription, y compris la création de compte Firebase Auth
+ * et l'enregistrement des données utilisateur dans Firestore.
+ * Elle fournit des données observables sur l'état de l'inscription et les messages d'erreur.
+ */
 public class RegisterViewModel extends ViewModel {
     private static final String TAG = "RegisterViewModel";
     private final MutableLiveData<User> currentUser = new MutableLiveData<>();
@@ -20,11 +26,23 @@ public class RegisterViewModel extends ViewModel {
     private boolean registrationSuccessful = false;
     private User lastRegisteredUser = null;
 
+    /**
+     * Constructeur qui initialise Firebase Authentication et Firestore.
+     */
     public RegisterViewModel() {
         auth = FirebaseAuth.getInstance();
         db = FirebaseFirestore.getInstance();
     }
 
+    /**
+     * Enregistre un nouvel utilisateur avec un nom d'utilisateur, email et mot de passe.
+     * Crée un compte Firebase Auth, met à jour le profil utilisateur et enregistre les données dans Firestore.
+     * Met à jour les LiveData et variables d'état en fonction du résultat.
+     *
+     * @param username Le nom d'utilisateur
+     * @param email L'adresse email
+     * @param password Le mot de passe
+     */
     public void register(String username, String email, String password) {
         Log.d(TAG, "Starting registration process for email: " + email);
         
@@ -129,19 +147,38 @@ public class RegisterViewModel extends ViewModel {
             });
     }
 
+    /**
+     * Obtient le LiveData contenant l'utilisateur nouvellement inscrit.
+     *
+     * @return LiveData contenant l'objet User de l'utilisateur inscrit, ou null si l'inscription a échoué
+     */
     public LiveData<User> getCurrentUser() {
         return currentUser;
     }
 
+    /**
+     * Obtient le LiveData contenant les messages d'erreur.
+     *
+     * @return LiveData contenant les messages d'erreur
+     */
     public LiveData<String> getErrorMessage() {
         return errorMessage;
     }
     
-    // Méthodes pour vérifier l'état de l'inscription
+    /**
+     * Vérifie si l'inscription a réussi.
+     *
+     * @return true si l'inscription a réussi, false sinon
+     */
     public boolean isRegistrationSuccessful() {
         return registrationSuccessful;
     }
     
+    /**
+     * Obtient l'utilisateur qui vient d'être inscrit.
+     *
+     * @return L'objet User de l'utilisateur inscrit, ou null si l'inscription a échoué
+     */
     public User getLastRegisteredUser() {
         return lastRegisteredUser;
     }

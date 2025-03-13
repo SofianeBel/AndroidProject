@@ -9,12 +9,22 @@ import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
 import com.google.firebase.auth.UserProfileChangeRequest;
 
+/**
+ * ViewModel responsable de la gestion de l'authentification des utilisateurs.
+ * Cette classe gère les opérations de connexion, déconnexion et fournit des données
+ * observables sur l'état de l'utilisateur actuel et les messages d'erreur.
+ * Elle interagit avec Firebase Authentication pour les opérations d'authentification.
+ */
 public class LoginViewModel extends ViewModel {
     private static final String TAG = "LoginViewModel";
     private final MutableLiveData<User> currentUser = new MutableLiveData<>();
     private final MutableLiveData<String> errorMessage = new MutableLiveData<>();
     private final FirebaseAuth auth;
 
+    /**
+     * Constructeur qui initialise Firebase Authentication.
+     * La vérification automatique de l'utilisateur connecté est commentée pour éviter les crashs.
+     */
     public LoginViewModel() {
         auth = FirebaseAuth.getInstance();
         
@@ -31,6 +41,13 @@ public class LoginViewModel extends ViewModel {
         */
     }
 
+    /**
+     * Connecte un utilisateur avec son email et mot de passe.
+     * Met à jour le LiveData currentUser en cas de succès ou errorMessage en cas d'échec.
+     *
+     * @param email L'adresse email de l'utilisateur
+     * @param password Le mot de passe de l'utilisateur
+     */
     public void login(String email, String password) {
         Log.d(TAG, "Attempting login for email: " + email);
         
@@ -75,20 +92,43 @@ public class LoginViewModel extends ViewModel {
         }
     }
 
+    /**
+     * Déconnecte l'utilisateur actuellement connecté.
+     * Réinitialise le LiveData currentUser à null.
+     */
     public void logout() {
         Log.d(TAG, "Logging out user");
         auth.signOut();
         currentUser.setValue(null);
     }
 
+    /**
+     * Obtient le LiveData contenant l'utilisateur actuellement connecté.
+     *
+     * @return LiveData contenant l'objet User de l'utilisateur connecté, ou null si aucun utilisateur n'est connecté
+     */
     public LiveData<User> getCurrentUser() {
         return currentUser;
     }
 
+    /**
+     * Obtient le LiveData contenant les messages d'erreur.
+     *
+     * @return LiveData contenant les messages d'erreur
+     */
     public LiveData<String> getErrorMessage() {
         return errorMessage;
     }
 
+    /**
+     * Enregistre un nouvel utilisateur avec un nom d'utilisateur, email et mot de passe.
+     * Cette méthode est une version simplifiée de l'inscription, utilisée principalement pour les tests.
+     * Pour une inscription complète, utilisez RegisterViewModel.
+     *
+     * @param username Le nom d'utilisateur
+     * @param email L'adresse email
+     * @param password Le mot de passe
+     */
     public void register(String username, String email, String password) {
         Log.d(TAG, "Starting registration process for email: " + email);
         // Create user with Firebase Auth

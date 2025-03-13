@@ -53,7 +53,19 @@ import android.graphics.Bitmap;
 import android.graphics.drawable.Drawable;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.io.InputStream;
+import java.io.FileNotFoundException;
+import java.util.Map;
+import java.util.HashMap;
+import android.graphics.BitmapFactory;
 
+/**
+ * Fragment permettant à l'utilisateur de modifier son profil.
+ * Ce fragment offre des fonctionnalités pour changer la photo de profil, la bannière,
+ * le nom d'utilisateur, la biographie et d'autres informations personnelles.
+ * Il gère également le téléchargement des images vers Firebase Storage et la mise à jour
+ * des données utilisateur dans Firebase Database.
+ */
 public class EditProfileFragment extends Fragment {
     private static final String TAG = "EditProfileFragment";
     private FragmentEditProfileBinding binding;
@@ -93,12 +105,28 @@ public class EditProfileFragment extends Fragment {
             });
     */
 
+    /**
+     * Crée et retourne la vue associée au fragment.
+     *
+     * @param inflater L'inflater utilisé pour gonfler la vue
+     * @param container Le conteneur parent
+     * @param savedInstanceState L'état sauvegardé du fragment
+     * @return La vue racine du fragment
+     */
+    @Nullable
     @Override
-    public View onCreateView(@NonNull LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
+    public View onCreateView(@NonNull LayoutInflater inflater, @Nullable ViewGroup container, @Nullable Bundle savedInstanceState) {
         binding = FragmentEditProfileBinding.inflate(inflater, container, false);
         return binding.getRoot();
     }
 
+    /**
+     * Initialise les composants de l'interface utilisateur et configure les observateurs
+     * après que la vue a été créée.
+     *
+     * @param view La vue racine du fragment
+     * @param savedInstanceState L'état sauvegardé du fragment
+     */
     @Override
     public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
         super.onViewCreated(view, savedInstanceState);

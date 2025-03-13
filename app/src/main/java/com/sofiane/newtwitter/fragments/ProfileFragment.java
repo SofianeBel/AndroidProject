@@ -38,6 +38,12 @@ import de.hdodenhof.circleimageview.CircleImageView;
 import java.util.ArrayList;
 import java.util.List;
 
+/**
+ * Fragment affichant le profil d'un utilisateur.
+ * Ce fragment présente les informations du profil utilisateur (nom, bio, statistiques)
+ * ainsi que la liste des posts publiés par cet utilisateur.
+ * Il permet également de suivre/ne plus suivre l'utilisateur et d'éditer son propre profil.
+ */
 public class ProfileFragment extends Fragment implements PostAdapter.OnPostInteractionListener {
     private static final String TAG = "ProfileFragment";
     private FragmentProfileBinding binding;
@@ -51,6 +57,14 @@ public class ProfileFragment extends Fragment implements PostAdapter.OnPostInter
     private String userId;
     private boolean isCurrentUserProfile = true;
 
+    /**
+     * Crée et retourne la vue associée au fragment.
+     *
+     * @param inflater L'inflater utilisé pour gonfler la vue
+     * @param container Le conteneur parent
+     * @param savedInstanceState L'état sauvegardé du fragment
+     * @return La vue racine du fragment
+     */
     @Nullable
     @Override
     public View onCreateView(@NonNull LayoutInflater inflater, @Nullable ViewGroup container, @Nullable Bundle savedInstanceState) {
@@ -58,6 +72,13 @@ public class ProfileFragment extends Fragment implements PostAdapter.OnPostInter
         return binding.getRoot();
     }
 
+    /**
+     * Initialise les composants de l'interface utilisateur et configure les observateurs
+     * après que la vue a été créée.
+     *
+     * @param view La vue racine du fragment
+     * @param savedInstanceState L'état sauvegardé du fragment
+     */
     @Override
     public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
         super.onViewCreated(view, savedInstanceState);
@@ -129,6 +150,11 @@ public class ProfileFragment extends Fragment implements PostAdapter.OnPostInter
         followViewModel.loadFollowCounts(userId);
     }
     
+    /**
+     * Configure le bouton de suivi en fonction du profil affiché.
+     * Si c'est le profil de l'utilisateur actuel, le bouton est masqué.
+     * Sinon, il permet de suivre ou ne plus suivre l'utilisateur.
+     */
     private void setupFollowButton() {
         if (!isCurrentUserProfile && currentUser != null) {
             binding.followButton.setOnClickListener(v -> {
@@ -144,6 +170,10 @@ public class ProfileFragment extends Fragment implements PostAdapter.OnPostInter
         }
     }
     
+    /**
+     * Configure l'observateur pour l'état de suivi.
+     * Met à jour l'interface utilisateur en fonction de l'état de suivi.
+     */
     private void observeFollowStatus() {
         // Observe follow status
         followViewModel.getFollowStatus().observe(getViewLifecycleOwner(), isFollowing -> {
@@ -174,12 +204,19 @@ public class ProfileFragment extends Fragment implements PostAdapter.OnPostInter
         });
     }
 
+    /**
+     * Configure le RecyclerView pour afficher la liste des posts de l'utilisateur.
+     */
     private void setupRecyclerView() {
         postAdapter = new PostAdapter(this);
         binding.userPostsRecyclerView.setLayoutManager(new LinearLayoutManager(getContext()));
         binding.userPostsRecyclerView.setAdapter(postAdapter);
     }
 
+    /**
+     * Charge les informations du profil utilisateur depuis Firebase.
+     * Met à jour l'interface utilisateur avec les données récupérées.
+     */
     private void loadUserProfile() {
         // Réinitialiser les champs de texte pour éviter d'afficher des données obsolètes
         if (binding != null) {
@@ -258,6 +295,11 @@ public class ProfileFragment extends Fragment implements PostAdapter.OnPostInter
         });
     }
 
+    /**
+     * Met à jour l'interface utilisateur avec les informations du profil.
+     *
+     * @param user L'objet User contenant les informations du profil
+     */
     private void updateUI(User user) {
         if (binding == null) {
             Log.e(TAG, "updateUI: binding is null, fragment may have been destroyed");
@@ -313,9 +355,10 @@ public class ProfileFragment extends Fragment implements PostAdapter.OnPostInter
     }
 
     /**
-     * Éclaircit une couleur en ajoutant du blanc
+     * Éclaircit une couleur en ajoutant de la transparence.
+     *
      * @param color La couleur à éclaircir
-     * @param factor Le facteur d'éclaircissement (0.0 à 1.0)
+     * @param factor Le facteur d'éclaircissement (entre 0 et 1)
      * @return La couleur éclaircie
      */
     private int lightenColor(int color, float factor) {
@@ -325,6 +368,10 @@ public class ProfileFragment extends Fragment implements PostAdapter.OnPostInter
         return Color.rgb(red, green, blue);
     }
 
+    /**
+     * Charge les posts de l'utilisateur depuis Firebase.
+     * Met à jour le RecyclerView avec les posts récupérés.
+     */
     private void loadUserPosts() {
         // Query posts by this user
         Query query = postsRef.orderByChild("userId").equalTo(userId);
@@ -383,6 +430,9 @@ public class ProfileFragment extends Fragment implements PostAdapter.OnPostInter
         });
     }
 
+    /**
+     * Nettoie les ressources lorsque la vue est détruite.
+     */
     @Override
     public void onDestroyView() {
         super.onDestroyView();
@@ -390,12 +440,24 @@ public class ProfileFragment extends Fragment implements PostAdapter.OnPostInter
     }
 
     // Implémentation des méthodes de l'interface OnPostInteractionListener
+    /**
+     * Appelé lorsque l'utilisateur like un post.
+     * Délègue l'action au ViewModel.
+     *
+     * @param post Le post qui a été liké
+     */
     @Override
     public void onPostLiked(Post post) {
         // Gérer le like d'un post
         Toast.makeText(requireContext(), "Like non implémenté dans le profil", Toast.LENGTH_SHORT).show();
     }
 
+    /**
+     * Appelé lorsque l'utilisateur clique sur un post.
+     * Navigue vers le fragment de détail du post.
+     *
+     * @param post Le post qui a été cliqué
+     */
     @Override
     public void onPostClicked(Post post) {
         // Naviguer vers le détail du post
@@ -404,24 +466,48 @@ public class ProfileFragment extends Fragment implements PostAdapter.OnPostInter
         Navigation.findNavController(requireView()).navigate(R.id.action_profileFragment_to_postDetailFragment, args);
     }
 
+    /**
+     * Appelé lorsque l'utilisateur retweet un post.
+     * Délègue l'action au ViewModel.
+     *
+     * @param post Le post qui a été retweeté
+     */
     @Override
     public void onPostRetweeted(Post post) {
         // Gérer le retweet d'un post
         Toast.makeText(requireContext(), "Retweet non implémenté dans le profil", Toast.LENGTH_SHORT).show();
     }
 
+    /**
+     * Appelé lorsque l'utilisateur partage un post.
+     * Ouvre un intent de partage.
+     *
+     * @param post Le post qui a été partagé
+     */
     @Override
     public void onPostShared(Post post) {
         // Gérer le partage d'un post
         Toast.makeText(requireContext(), "Partage non implémenté dans le profil", Toast.LENGTH_SHORT).show();
     }
 
+    /**
+     * Appelé lorsque l'utilisateur répond à un post.
+     * Navigue vers le fragment de création de post en mode réponse.
+     *
+     * @param post Le post auquel l'utilisateur répond
+     */
     @Override
     public void onPostReplied(Post post) {
         // Gérer la réponse à un post
         Toast.makeText(requireContext(), "Réponse non implémentée dans le profil", Toast.LENGTH_SHORT).show();
     }
 
+    /**
+     * Appelé lorsque l'utilisateur clique sur un profil utilisateur.
+     * Navigue vers le fragment de profil de l'utilisateur.
+     *
+     * @param userId L'identifiant de l'utilisateur
+     */
     @Override
     public void onUserProfileClicked(String userId) {
         try {

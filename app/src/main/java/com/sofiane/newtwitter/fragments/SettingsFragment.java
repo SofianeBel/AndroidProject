@@ -16,10 +16,24 @@ import com.google.firebase.auth.FirebaseUser;
 import com.sofiane.newtwitter.R;
 import com.sofiane.newtwitter.databinding.FragmentSettingsBinding;
 
+/**
+ * Fragment permettant à l'utilisateur d'accéder aux paramètres de l'application.
+ * Ce fragment offre des options pour éditer le profil, changer le mot de passe,
+ * et se déconnecter de l'application. Il vérifie également l'état d'authentification
+ * de l'utilisateur avant de permettre certaines actions.
+ */
 public class SettingsFragment extends Fragment {
     private FragmentSettingsBinding binding;
     private FirebaseAuth auth;
 
+    /**
+     * Crée et retourne la vue associée au fragment.
+     *
+     * @param inflater L'inflater utilisé pour gonfler la vue
+     * @param container Le conteneur parent
+     * @param savedInstanceState L'état sauvegardé du fragment
+     * @return La vue racine du fragment
+     */
     @Nullable
     @Override
     public View onCreateView(@NonNull LayoutInflater inflater, @Nullable ViewGroup container, @Nullable Bundle savedInstanceState) {
@@ -27,6 +41,13 @@ public class SettingsFragment extends Fragment {
         return binding.getRoot();
     }
 
+    /**
+     * Initialise les composants de l'interface utilisateur et configure les listeners
+     * après que la vue a été créée.
+     *
+     * @param view La vue racine du fragment
+     * @param savedInstanceState L'état sauvegardé du fragment
+     */
     @Override
     public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
         super.onViewCreated(view, savedInstanceState);

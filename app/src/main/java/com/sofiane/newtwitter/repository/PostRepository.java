@@ -23,13 +23,18 @@ import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.UUID;
 
+/**
+ * Repository pour gérer les données des posts (tweets).
+ * Cette classe implémente le pattern Singleton pour assurer une instance unique.
+ * Elle gère les opérations CRUD pour les posts, ainsi que les interactions comme
+ * les likes, les retweets et les réponses.
+ * Les données sont stockées dans Firebase Realtime Database.
+ */
 public class PostRepository {
     private static final String TAG = "PostRepository";
     private static PostRepository instance;
-    
-    // Réinitialiser cette variable pour recréer des posts d'exemple
-    private boolean samplePostsCreated = false;
     
     // Firebase references
     private final DatabaseReference postsRef;
@@ -40,6 +45,10 @@ public class PostRepository {
     private final MutableLiveData<List<Post>> allPostsLiveData = new MutableLiveData<>();
     private final MutableLiveData<String> errorMessageLiveData = new MutableLiveData<>();
 
+    /**
+     * Constructeur privé pour empêcher l'instanciation directe.
+     * Initialise les références Firebase nécessaires.
+     */
     private PostRepository() {
         // Initialize Firebase Database references
         FirebaseDatabase database = FirebaseDatabase.getInstance("https://newtwitter-65ad1-default-rtdb.europe-west1.firebasedatabase.app");
@@ -51,6 +60,12 @@ public class PostRepository {
         loadAllPosts();
     }
 
+    /**
+     * Obtient l'instance unique du repository.
+     * Crée une nouvelle instance si elle n'existe pas encore.
+     *
+     * @return L'instance unique de PostRepository
+     */
     public static PostRepository getInstance() {
         if (instance == null) {
             instance = new PostRepository();
@@ -58,89 +73,51 @@ public class PostRepository {
         return instance;
     }
 
-    // LiveData getters
+    /**
+     * Récupère le LiveData contenant tous les posts.
+     *
+     * @return LiveData contenant la liste des posts
+     */
     public LiveData<List<Post>> getAllPostsLiveData() {
         return allPostsLiveData;
     }
-    
+
+    /**
+     * Récupère le LiveData contenant les messages d'erreur.
+     *
+     * @return LiveData contenant les messages d'erreur
+     */
     public LiveData<String> getErrorMessageLiveData() {
         return errorMessageLiveData;
     }
 
-    // Load all posts from Firebase
+    /**
+     * Charge tous les posts depuis Firebase et met à jour le LiveData.
+     */
     public void loadAllPosts() {
         try {
-            Log.d(TAG, "Starting to load all posts from Firebase");
-            // Query to get all posts ordered by creation time (newest first)
-            // Firebase ne supporte pas directement le tri décroissant, nous devons donc
-            // trier côté client ou utiliser une autre approche
-            Query query = postsRef;
-            
-            query.addValueEventListener(new ValueEventListener() {
+            postsRef.addValueEventListener(new ValueEventListener() {
                 @Override
                 public void onDataChange(@NonNull DataSnapshot dataSnapshot) {
                     try {
                         List<Post> posts = new ArrayList<>();
-                        List<Post> allPosts = new ArrayList<>(); // Liste contenant tous les posts, y compris les réponses et retweets
                         
-                        Log.d(TAG, "onDataChange called, snapshot has " + dataSnapshot.getChildrenCount() + " children");
-                        
-                        // Loop through all posts
                         for (DataSnapshot postSnapshot : dataSnapshot.getChildren()) {
-                            try {
-                                Log.d(TAG, "Trying to parse post with key: " + postSnapshot.getKey());
-                                // Afficher les données brutes pour le débogage
-                                Map<String, Object> rawData = (Map<String, Object>) postSnapshot.getValue();
-                                if (rawData != null) {
-                                    Log.d(TAG, "Raw data: " + rawData.toString());
-                                }
-                                
-                                Post post = postSnapshot.getValue(Post.class);
-                                if (post != null) {
-                                    // Ajouter tous les posts à la liste complète
-                                    allPosts.add(post);
-                                    
-                                    // Filtrer les retweets et les réponses pour qu'ils n'apparaissent pas dans le fil d'actualité
-                                    if (!post.isRetweet() && !post.isReply()) {
-                                        posts.add(post); // Add to list only if it's not a retweet or reply
-                                        Log.d(TAG, "Loaded post: " + post.getId() + ", content: " + post.getContent());
-                                    } else {
-                                        Log.d(TAG, "Skipped retweet/reply post: " + post.getId());
-                                    }
-                                } else {
-                                    Log.w(TAG, "Failed to parse post from: " + postSnapshot.getKey());
-                                }
-                            } catch (Exception e) {
-                                Log.e(TAG, "Error parsing post: " + e.getMessage(), e);
+                            Post post = postSnapshot.getValue(Post.class);
+                            if (post != null) {
+                                posts.add(post);
                             }
                         }
                         
-                        // Trier les posts par date (du plus récent au plus ancien)
+                        // Sort by creation date (newest first)
                         posts.sort((p1, p2) -> p2.getCreatedAt().compareTo(p1.getCreatedAt()));
-                        allPosts.sort((p1, p2) -> p2.getCreatedAt().compareTo(p1.getCreatedAt()));
                         
-                        // Mettre à jour la LiveData avec la liste filtrée pour le fil d'actualité
-                        allPostsLiveData.setValue(allPosts);
-                        
-                        // Log le résultat
-                        if (posts.isEmpty()) {
-                            Log.d(TAG, "No posts found in Firebase");
-                        } else {
-                            Log.d(TAG, "Loaded " + posts.size() + " posts from Firebase");
-                        }
-                        
-                        // Si aucun post n'est trouvé, créer quelques posts de test
-                        // Mais seulement si c'est la première fois
-                        if (posts.isEmpty() && !samplePostsCreated) {
-                            Log.d(TAG, "No posts found, creating sample posts");
-                            samplePostsCreated = true;
-                            createSamplePosts();
-                        }
+                        // Update LiveData
+                        allPostsLiveData.setValue(posts);
+                        Log.d(TAG, "Loaded " + posts.size() + " posts");
                     } catch (Exception e) {
                         Log.e(TAG, "Error parsing posts: " + e.getMessage(), e);
-                        errorMessageLiveData.setValue("Error loading posts: " + e.getMessage());
-                        // Même en cas d'erreur, mettre à jour la LiveData avec une liste vide
-                        allPostsLiveData.setValue(new ArrayList<>());
+                        errorMessageLiveData.setValue("Error parsing posts: " + e.getMessage());
                     }
                 }
 
@@ -148,8 +125,6 @@ public class PostRepository {
                 public void onCancelled(@NonNull DatabaseError databaseError) {
                     Log.e(TAG, "Database error: " + databaseError.getMessage());
                     errorMessageLiveData.setValue("Database error: " + databaseError.getMessage());
-                    // En cas d'erreur, mettre à jour la LiveData avec une liste vide
-                    allPostsLiveData.setValue(new ArrayList<>());
                 }
             });
         } catch (Exception e) {
@@ -159,66 +134,12 @@ public class PostRepository {
             allPostsLiveData.setValue(new ArrayList<>());
         }
     }
-    
-    // Créer des posts de test si aucun post n'est trouvé
-    private void createSamplePosts() {
-        try {
-            Log.d(TAG, "Creating sample posts");
-            // Créer quelques posts de test avec des délais pour éviter les conflits
-            new Handler(Looper.getMainLooper()).postDelayed(() -> {
-                createSamplePost("user1", "User1", "Bienvenue sur notre nouvelle application de réseau social!");
-            }, 100);
-            
-            new Handler(Looper.getMainLooper()).postDelayed(() -> {
-                createSamplePost("user2", "User2", "J'adore cette nouvelle application! Tellement simple à utiliser.");
-            }, 300);
-            
-            new Handler(Looper.getMainLooper()).postDelayed(() -> {
-                createSamplePost("user3", "User3", "Bonjour à tous! Je viens de rejoindre cette plateforme.");
-            }, 500);
-            
-            // Ne pas rappeler loadAllPosts() pour éviter une boucle infinie
-            // Les posts seront chargés automatiquement grâce au ValueEventListener
-        } catch (Exception e) {
-            Log.e(TAG, "Error creating sample posts: " + e.getMessage(), e);
-        }
-    }
-    
-    // Méthode spécifique pour créer des posts de test
-    private void createSamplePost(String userId, String username, String content) {
-        try {
-            // Generate a unique key for the new post
-            String postId = postsRef.push().getKey();
-            if (postId == null) {
-                Log.e(TAG, "Failed to create post ID for sample post");
-                return;
-            }
-            
-            // Create post object with current timestamp
-            Post post = new Post(
-                postId,
-                userId,
-                username,
-                content,
-                null, // No image URL for now
-                new Date(),
-                0 // Initial like count
-            );
-            
-            // Save post to Firebase
-            postsRef.child(postId).setValue(post)
-                .addOnSuccessListener(aVoid -> {
-                    Log.d(TAG, "Sample post created successfully with ID: " + postId);
-                })
-                .addOnFailureListener(e -> {
-                    Log.e(TAG, "Error creating sample post: " + e.getMessage(), e);
-                });
-        } catch (Exception e) {
-            Log.e(TAG, "Error creating sample post: " + e.getMessage(), e);
-        }
-    }
 
-    // Create a new post in Firebase
+    /**
+     * Crée un nouveau post pour l'utilisateur actuellement connecté.
+     *
+     * @param content Le contenu du post
+     */
     public void createPost(String content) {
         try {
             FirebaseUser currentUser = FirebaseAuth.getInstance().getCurrentUser();
@@ -266,7 +187,13 @@ public class PostRepository {
         }
     }
 
-    // Create a post with a specific username (for testing)
+    /**
+     * Crée un nouveau post pour un utilisateur spécifique.
+     *
+     * @param userId   L'identifiant de l'auteur du post
+     * @param username Le nom d'utilisateur de l'auteur
+     * @param content  Le contenu du post
+     */
     public void createPost(String userId, String username, String content) {
         try {
             // Generate a unique key for the new post
@@ -302,7 +229,11 @@ public class PostRepository {
         }
     }
 
-    // Get posts by a specific user
+    /**
+     * Charge les posts d'un utilisateur spécifique.
+     *
+     * @param userId L'identifiant de l'utilisateur
+     */
     public void loadPostsByUser(String userId) {
         try {
             Query query = postsRef.orderByChild("userId").equalTo(userId);
@@ -343,7 +274,12 @@ public class PostRepository {
         }
     }
 
-    // Like a post
+    /**
+     * Ajoute ou supprime un like sur un post.
+     * Met à jour le compteur de likes du post.
+     *
+     * @param postId L'identifiant du post à liker/unliker
+     */
     public void likePost(String postId) {
         try {
             FirebaseUser currentUser = FirebaseAuth.getInstance().getCurrentUser();
@@ -416,7 +352,11 @@ public class PostRepository {
         }
     }
 
-    // Delete a post
+    /**
+     * Supprime un post et ses références associées.
+     *
+     * @param postId L'identifiant du post à supprimer
+     */
     public void deletePost(String postId) {
         try {
             FirebaseUser currentUser = FirebaseAuth.getInstance().getCurrentUser();
@@ -459,7 +399,12 @@ public class PostRepository {
         }
     }
 
-    // Créer une réponse à un post
+    /**
+     * Crée une réponse à un post existant.
+     *
+     * @param content      Le contenu de la réponse
+     * @param parentPostId L'identifiant du post parent
+     */
     public void createReply(String content, String parentPostId) {
         try {
             FirebaseUser currentUser = FirebaseAuth.getInstance().getCurrentUser();
@@ -556,7 +501,11 @@ public class PostRepository {
         }
     }
 
-    // Retweeter un post
+    /**
+     * Crée un retweet d'un post existant.
+     *
+     * @param originalPost Le post original à retweeter
+     */
     public void retweetPost(Post originalPost) {
         try {
             FirebaseUser currentUser = FirebaseAuth.getInstance().getCurrentUser();
@@ -673,7 +622,10 @@ public class PostRepository {
         }
     }
 
-    // Méthode pour charger spécifiquement les retweets et les réponses
+    /**
+     * Charge les retweets et les réponses pour les afficher dans le fil d'actualité.
+     * Met à jour allPostsLiveData avec les résultats.
+     */
     public void loadRetweetsAndReplies() {
         try {
             Log.d(TAG, "Starting to load retweets and replies from Firebase");
@@ -727,7 +679,12 @@ public class PostRepository {
         }
     }
 
-    // Méthode pour charger les réponses à un post spécifique
+    /**
+     * Charge les réponses à un post spécifique.
+     * Met à jour allPostsLiveData avec les résultats.
+     *
+     * @param parentPostId L'identifiant du post parent
+     */
     public void loadRepliesForPost(String parentPostId) {
         try {
             Log.d(TAG, "Starting to load replies for post: " + parentPostId);

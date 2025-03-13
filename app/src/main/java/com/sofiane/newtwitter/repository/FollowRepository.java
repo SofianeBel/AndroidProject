@@ -18,6 +18,12 @@ import com.sofiane.newtwitter.model.User;
 import java.util.HashMap;
 import java.util.Map;
 
+/**
+ * Repository pour gérer les relations de suivi entre utilisateurs.
+ * Cette classe implémente le pattern Singleton pour assurer une instance unique.
+ * Elle gère les opérations de suivi/ne plus suivre et maintient les compteurs associés.
+ * Les données sont stockées dans Firebase Realtime Database.
+ */
 public class FollowRepository {
     private static final String TAG = "FollowRepository";
     private static FollowRepository instance;
@@ -32,6 +38,10 @@ public class FollowRepository {
     private final MutableLiveData<Integer> followingCountLiveData = new MutableLiveData<>();
     private final MutableLiveData<String> errorMessageLiveData = new MutableLiveData<>();
 
+    /**
+     * Constructeur privé pour empêcher l'instanciation directe.
+     * Initialise les références Firebase nécessaires.
+     */
     private FollowRepository() {
         // Initialize Firebase Database references
         FirebaseDatabase database = FirebaseDatabase.getInstance("https://newtwitter-65ad1-default-rtdb.europe-west1.firebasedatabase.app");
@@ -39,6 +49,12 @@ public class FollowRepository {
         followsRef = database.getReference("follows");
     }
 
+    /**
+     * Obtient l'instance unique du repository.
+     * Crée une nouvelle instance si elle n'existe pas encore.
+     *
+     * @return L'instance unique de FollowRepository
+     */
     public static FollowRepository getInstance() {
         if (instance == null) {
             instance = new FollowRepository();
@@ -46,24 +62,48 @@ public class FollowRepository {
         return instance;
     }
 
-    // LiveData getters
+    /**
+     * Récupère le LiveData indiquant si l'utilisateur actuel suit un autre utilisateur.
+     *
+     * @return LiveData contenant l'état de suivi (true si l'utilisateur est suivi, false sinon)
+     */
     public LiveData<Boolean> getFollowStatusLiveData() {
         return followStatusLiveData;
     }
-    
+
+    /**
+     * Récupère le LiveData contenant le nombre de followers d'un utilisateur.
+     *
+     * @return LiveData contenant le nombre de followers
+     */
     public LiveData<Integer> getFollowersCountLiveData() {
         return followersCountLiveData;
     }
-    
+
+    /**
+     * Récupère le LiveData contenant le nombre d'utilisateurs suivis par un utilisateur.
+     *
+     * @return LiveData contenant le nombre d'utilisateurs suivis
+     */
     public LiveData<Integer> getFollowingCountLiveData() {
         return followingCountLiveData;
     }
-    
+
+    /**
+     * Récupère le LiveData contenant les messages d'erreur.
+     *
+     * @return LiveData contenant les messages d'erreur
+     */
     public LiveData<String> getErrorMessageLiveData() {
         return errorMessageLiveData;
     }
 
-    // Check if current user is following a specific user
+    /**
+     * Vérifie si l'utilisateur actuel suit un utilisateur cible.
+     * Met à jour le followStatusLiveData avec le résultat.
+     *
+     * @param targetUserId L'identifiant de l'utilisateur cible
+     */
     public void checkFollowStatus(String targetUserId) {
         FirebaseUser currentUser = FirebaseAuth.getInstance().getCurrentUser();
         if (currentUser == null) {
@@ -91,7 +131,12 @@ public class FollowRepository {
                 });
     }
 
-    // Follow a user
+    /**
+     * Permet à l'utilisateur actuel de suivre un utilisateur cible.
+     * Met à jour les compteurs de followers et following pour les deux utilisateurs.
+     *
+     * @param targetUserId L'identifiant de l'utilisateur à suivre
+     */
     public void followUser(String targetUserId) {
         FirebaseUser currentUser = FirebaseAuth.getInstance().getCurrentUser();
         if (currentUser == null) {
@@ -165,7 +210,12 @@ public class FollowRepository {
         });
     }
 
-    // Unfollow a user
+    /**
+     * Permet à l'utilisateur actuel de ne plus suivre un utilisateur cible.
+     * Met à jour les compteurs de followers et following pour les deux utilisateurs.
+     *
+     * @param targetUserId L'identifiant de l'utilisateur à ne plus suivre
+     */
     public void unfollowUser(String targetUserId) {
         FirebaseUser currentUser = FirebaseAuth.getInstance().getCurrentUser();
         if (currentUser == null) {
@@ -237,6 +287,12 @@ public class FollowRepository {
         });
     }
 
+    /**
+     * Charge les compteurs de followers et following pour un utilisateur.
+     * Met à jour followersCountLiveData et followingCountLiveData avec les résultats.
+     *
+     * @param userId L'identifiant de l'utilisateur dont on veut charger les compteurs
+     */
     // Load followers and following counts for a user
     public void loadFollowCounts(String userId) {
         usersRef.child(userId).addValueEventListener(new ValueEventListener() {

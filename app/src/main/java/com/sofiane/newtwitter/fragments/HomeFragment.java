@@ -32,6 +32,12 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 
+/**
+ * Fragment affichant le fil d'actualité principal de l'application.
+ * Ce fragment présente une liste de posts (tweets) provenant de tous les utilisateurs,
+ * avec des fonctionnalités pour rafraîchir le contenu, créer de nouveaux posts,
+ * et interagir avec les posts existants (like, retweet, répondre).
+ */
 public class HomeFragment extends Fragment implements PostAdapter.OnPostInteractionListener {
     private static final String TAG = "HomeFragment";
     private FragmentHomeBinding binding;
@@ -41,6 +47,15 @@ public class HomeFragment extends Fragment implements PostAdapter.OnPostInteract
     // Variable pour stocker le post auquel on répond
     private Post replyToPost;
 
+    /**
+     * Crée et retourne la vue associée au fragment.
+     * Gère les erreurs potentielles lors de la création de la vue.
+     *
+     * @param inflater L'inflater utilisé pour gonfler la vue
+     * @param container Le conteneur parent
+     * @param savedInstanceState L'état sauvegardé du fragment
+     * @return La vue racine du fragment
+     */
     @Nullable
     @Override
     public View onCreateView(@NonNull LayoutInflater inflater, @Nullable ViewGroup container, @Nullable Bundle savedInstanceState) {
@@ -62,6 +77,13 @@ public class HomeFragment extends Fragment implements PostAdapter.OnPostInteract
         }
     }
 
+    /**
+     * Initialise les composants de l'interface utilisateur et configure les observateurs
+     * après que la vue a été créée.
+     *
+     * @param view La vue racine du fragment
+     * @param savedInstanceState L'état sauvegardé du fragment
+     */
     @Override
     public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
         super.onViewCreated(view, savedInstanceState);
@@ -101,6 +123,9 @@ public class HomeFragment extends Fragment implements PostAdapter.OnPostInteract
         }
     }
     
+    /**
+     * Configure la barre d'outils du fragment.
+     */
     private void setupToolbar() {
         try {
             // Set profile image in header
@@ -120,6 +145,9 @@ public class HomeFragment extends Fragment implements PostAdapter.OnPostInteract
         }
     }
     
+    /**
+     * Configure le RecyclerView pour afficher la liste des posts.
+     */
     private void setupRecyclerView() {
         try {
             postAdapter = new PostAdapter(this);
@@ -130,6 +158,10 @@ public class HomeFragment extends Fragment implements PostAdapter.OnPostInteract
         }
     }
     
+    /**
+     * Configure l'observateur pour les posts.
+     * Met à jour l'interface utilisateur lorsque la liste des posts change.
+     */
     private void observePosts() {
         try {
             Log.d(TAG, "Starting to observe posts from ViewModel");
@@ -195,6 +227,10 @@ public class HomeFragment extends Fragment implements PostAdapter.OnPostInteract
         }
     }
     
+    /**
+     * Configure l'observateur pour les messages d'erreur.
+     * Affiche les messages d'erreur à l'utilisateur lorsqu'ils surviennent.
+     */
     private void observeErrors() {
         try {
             postViewModel.getErrorMessage().observe(getViewLifecycleOwner(), errorMessage -> {
@@ -208,6 +244,10 @@ public class HomeFragment extends Fragment implements PostAdapter.OnPostInteract
         }
     }
     
+    /**
+     * Rafraîchit la liste des posts.
+     * Appelé lorsque l'utilisateur tire vers le bas pour rafraîchir.
+     */
     private void refreshPosts() {
         try {
             Log.d(TAG, "Refreshing posts");
@@ -244,6 +284,10 @@ public class HomeFragment extends Fragment implements PostAdapter.OnPostInteract
         }
     }
     
+    /**
+     * Navigue vers le fragment de création de post.
+     * Appelé lorsque l'utilisateur clique sur le bouton flottant d'action.
+     */
     private void navigateToCreatePost() {
         try {
             Navigation.findNavController(requireView()).navigate(R.id.navigation_create_post);
@@ -253,6 +297,12 @@ public class HomeFragment extends Fragment implements PostAdapter.OnPostInteract
         }
     }
 
+    /**
+     * Appelé lorsque l'utilisateur like un post.
+     * Délègue l'action au ViewModel.
+     *
+     * @param post Le post qui a été liké
+     */
     @Override
     public void onPostLiked(Post post) {
         try {
@@ -264,6 +314,12 @@ public class HomeFragment extends Fragment implements PostAdapter.OnPostInteract
         }
     }
 
+    /**
+     * Appelé lorsque l'utilisateur clique sur un post.
+     * Navigue vers le fragment de détail du post.
+     *
+     * @param post Le post qui a été cliqué
+     */
     @Override
     public void onPostClicked(Post post) {
         try {
@@ -280,6 +336,12 @@ public class HomeFragment extends Fragment implements PostAdapter.OnPostInteract
         }
     }
 
+    /**
+     * Appelé lorsque l'utilisateur retweet un post.
+     * Délègue l'action au ViewModel.
+     *
+     * @param post Le post qui a été retweeté
+     */
     @Override
     public void onPostRetweeted(Post post) {
         try {
@@ -292,6 +354,12 @@ public class HomeFragment extends Fragment implements PostAdapter.OnPostInteract
         }
     }
     
+    /**
+     * Appelé lorsque l'utilisateur partage un post.
+     * Ouvre un intent de partage.
+     *
+     * @param post Le post qui a été partagé
+     */
     @Override
     public void onPostShared(Post post) {
         try {
@@ -306,6 +374,12 @@ public class HomeFragment extends Fragment implements PostAdapter.OnPostInteract
         }
     }
 
+    /**
+     * Appelé lorsque l'utilisateur répond à un post.
+     * Navigue vers le fragment de création de post en mode réponse.
+     *
+     * @param post Le post auquel l'utilisateur répond
+     */
     @Override
     public void onPostReplied(Post post) {
         try {
@@ -323,6 +397,12 @@ public class HomeFragment extends Fragment implements PostAdapter.OnPostInteract
         }
     }
 
+    /**
+     * Appelé lorsque l'utilisateur clique sur un profil utilisateur.
+     * Navigue vers le fragment de profil de l'utilisateur.
+     *
+     * @param userId L'identifiant de l'utilisateur
+     */
     @Override
     public void onUserProfileClicked(String userId) {
         try {
@@ -341,6 +421,9 @@ public class HomeFragment extends Fragment implements PostAdapter.OnPostInteract
         }
     }
 
+    /**
+     * Nettoie les ressources lorsque la vue est détruite.
+     */
     @Override
     public void onDestroyView() {
         super.onDestroyView();

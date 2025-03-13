@@ -12,31 +12,87 @@ import com.google.firebase.database.DatabaseReference;
 import com.google.firebase.database.FirebaseDatabase;
 import com.google.firebase.database.ValueEventListener;
 
+/**
+ * Gestionnaire des relations de suivi entre utilisateurs.
+ * Cette classe fournit des méthodes pour suivre/ne plus suivre des utilisateurs
+ * et pour obtenir des informations sur les relations de suivi.
+ * Elle interagit directement avec Firebase Realtime Database.
+ */
 public class FollowManager {
 
     private final DatabaseReference mDatabase;
     private final FirebaseUser currentUser;
 
+    /**
+     * Interface de callback pour les opérations de suivi/désabonnement.
+     */
     public interface FollowListener {
+        /**
+         * Appelé lorsque l'opération est réussie.
+         */
         void onSuccess();
+        
+        /**
+         * Appelé lorsqu'une erreur se produit.
+         * 
+         * @param message Message d'erreur
+         */
         void onError(String message);
     }
 
+    /**
+     * Interface de callback pour vérifier le statut de suivi.
+     */
     public interface FollowStatusListener {
+        /**
+         * Appelé avec le statut de suivi.
+         * 
+         * @param isFollowing true si l'utilisateur courant suit l'utilisateur cible, false sinon
+         */
         void onStatus(boolean isFollowing);
+        
+        /**
+         * Appelé lorsqu'une erreur se produit.
+         * 
+         * @param message Message d'erreur
+         */
         void onError(String message);
     }
 
+    /**
+     * Interface de callback pour obtenir des compteurs (followers/following).
+     */
     public interface CountListener {
+        /**
+         * Appelé avec le nombre d'utilisateurs.
+         * 
+         * @param count Nombre d'utilisateurs (followers ou following)
+         */
         void onCount(int count);
+        
+        /**
+         * Appelé lorsqu'une erreur se produit.
+         * 
+         * @param message Message d'erreur
+         */
         void onError(String message);
     }
 
+    /**
+     * Constructeur qui initialise les références Firebase.
+     */
     public FollowManager() {
         mDatabase = FirebaseDatabase.getInstance().getReference();
         currentUser = FirebaseAuth.getInstance().getCurrentUser();
     }
 
+    /**
+     * Permet à l'utilisateur courant de suivre un utilisateur cible.
+     * Met à jour les listes "following" et "followers" dans Firebase.
+     * 
+     * @param targetUserId ID de l'utilisateur à suivre
+     * @param listener Callback pour notifier du résultat de l'opération
+     */
     public void followUser(String targetUserId, final FollowListener listener) {
         if (currentUser == null) {
             if (listener != null) {
@@ -64,6 +120,13 @@ public class FollowManager {
                 });
     }
 
+    /**
+     * Permet à l'utilisateur courant de ne plus suivre un utilisateur cible.
+     * Met à jour les listes "following" et "followers" dans Firebase.
+     * 
+     * @param targetUserId ID de l'utilisateur à ne plus suivre
+     * @param listener Callback pour notifier du résultat de l'opération
+     */
     public void unfollowUser(String targetUserId, final FollowListener listener) {
         if (currentUser == null) {
             if (listener != null) {
@@ -91,6 +154,12 @@ public class FollowManager {
                 });
     }
 
+    /**
+     * Vérifie si l'utilisateur courant suit un utilisateur cible.
+     * 
+     * @param targetUserId ID de l'utilisateur cible
+     * @param listener Callback pour notifier du résultat de la vérification
+     */
     public void checkFollowStatus(String targetUserId, final FollowStatusListener listener) {
         if (currentUser == null) {
             if (listener != null) {
@@ -117,6 +186,12 @@ public class FollowManager {
                 });
     }
 
+    /**
+     * Obtient le nombre d'abonnés (followers) d'un utilisateur.
+     * 
+     * @param userId ID de l'utilisateur
+     * @param listener Callback pour notifier du résultat
+     */
     public void getFollowersCount(String userId, final CountListener listener) {
         mDatabase.child("follows").child(userId).child("followers")
                 .addListenerForSingleValueEvent(new ValueEventListener() {
@@ -136,6 +211,12 @@ public class FollowManager {
                 });
     }
 
+    /**
+     * Obtient le nombre d'utilisateurs suivis (following) par un utilisateur.
+     * 
+     * @param userId ID de l'utilisateur
+     * @param listener Callback pour notifier du résultat
+     */
     public void getFollowingCount(String userId, final CountListener listener) {
         mDatabase.child("follows").child(userId).child("following")
                 .addListenerForSingleValueEvent(new ValueEventListener() {

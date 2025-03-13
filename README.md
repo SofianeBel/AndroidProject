@@ -4,6 +4,38 @@ Une application Android de microblogging inspirée de Twitter, permettant aux ut
 
 ## Fonctionnalités
 
+### Version 1.5.3
+- **Correction de la navigation** : Résolution des problèmes de navigation entre les profils utilisateurs
+- **Amélioration de la stabilité** : Correction des erreurs lors de la navigation dans l'application
+- **Optimisation des performances** : Réduction des temps de chargement et amélioration de la réactivité
+
+### Version 1.5.2
+- **Correction de la navigation** : Résolution du problème de navigation depuis l'accueil vers les profils utilisateurs
+- **Amélioration de la stabilité** : Correction des erreurs lors du chargement des profils
+
+### Version 1.5.1
+- **Correction des imports** : Résolution des problèmes d'imports pour CircleImageView
+- **Amélioration de la stabilité** : Correction des erreurs de compilation
+
+### Version 1.5.0
+- **Photos de profil dans les posts** : Affichage des photos de profil de chaque utilisateur sur leurs posts
+- **Navigation vers les profils** : Possibilité de cliquer sur le nom d'utilisateur ou la photo de profil pour accéder au profil
+- **Interface utilisateur améliorée** : Meilleure présentation des posts avec les photos de profil
+
+### Version 1.4.3
+- **Correction des bugs** : Résolution des problèmes liés aux icônes et couleurs de profil
+- **Amélioration de la stabilité** : Correction des erreurs lors de la sauvegarde des profils
+- **Optimisation des performances** : Réduction des temps de chargement des profils
+
+### Version 1.4.2
+- **Débogage amélioré** : Ajout de logs détaillés pour faciliter le débogage
+- **Correction des bugs** : Résolution des problèmes liés aux icônes et couleurs de profil
+
+### Version 1.4.1
+- **Icônes de profil personnalisables** : Choix parmi plusieurs icônes pour personnaliser son profil
+- **Couleurs de profil personnalisables** : Sélection de couleurs pour les icônes de profil
+- **Interface utilisateur améliorée** : Meilleure présentation des profils avec les icônes colorées
+
 ### Version 1.3.0
 - **Listes d'abonnés et d'abonnements** : Visualisation des utilisateurs qui suivent ou sont suivis
 - **Navigation améliorée** : Accès direct aux profils depuis les listes d'abonnés/abonnements
@@ -42,7 +74,7 @@ Une application Android de microblogging inspirée de Twitter, permettant aux ut
 1. Clonez ce dépôt
 2. Ouvrez le projet dans Android Studio
 3. Connectez l'application à votre propre projet Firebase
-4. Exécutez l'application sur un émulateur ou un appareil Android
+4. Exécutez l'application sur un émulateur ou un appareil Android (Java 17 requis)
 
 ## Prochaines fonctionnalités
 
@@ -128,9 +160,18 @@ Si le problème persiste, vérifiez les logs de l'application pour identifier d'
 
 - Affichage d'un fil d'actualité avec des posts
 - Création de nouveaux posts
-- Possibilité de liker des posts
+- Possibilité de liker, retweeter et répondre à des posts
 - Navigation entre différentes sections (Accueil, Profil, Paramètres)
+- Personnalisation du profil avec des icônes et couleurs
+- Système de suivi d'utilisateurs
+- Affichage des profils utilisateurs avec leurs posts
+
+## Prérequis techniques
+
+- Android Studio
+- Java 17 (requis pour le plugin Android Gradle)
+- Connexion Internet pour accéder à Firebase
 
 ## Version
 
-Version actuelle : 1.3.0 
+Version actuelle : 1.5.3 

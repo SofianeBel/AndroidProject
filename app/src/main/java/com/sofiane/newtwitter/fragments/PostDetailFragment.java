@@ -35,6 +35,12 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 
+/**
+ * Fragment affichant le détail d'un post (tweet) et ses réponses.
+ * Ce fragment présente le contenu complet d'un post, ses statistiques (likes, retweets, etc.),
+ * et la liste des réponses à ce post. Il permet également d'interagir avec le post
+ * (like, retweet, répondre) et de naviguer vers le profil de l'auteur.
+ */
 public class PostDetailFragment extends Fragment implements PostAdapter.OnPostInteractionListener {
     private static final String TAG = "PostDetailFragment";
     private FragmentPostDetailBinding binding;
@@ -44,6 +50,14 @@ public class PostDetailFragment extends Fragment implements PostAdapter.OnPostIn
     private String postId;
     private DatabaseReference usersRef;
 
+    /**
+     * Crée et retourne la vue associée au fragment.
+     *
+     * @param inflater L'inflater utilisé pour gonfler la vue
+     * @param container Le conteneur parent
+     * @param savedInstanceState L'état sauvegardé du fragment
+     * @return La vue racine du fragment
+     */
     @Nullable
     @Override
     public View onCreateView(@NonNull LayoutInflater inflater, @Nullable ViewGroup container, @Nullable Bundle savedInstanceState) {
@@ -51,6 +65,13 @@ public class PostDetailFragment extends Fragment implements PostAdapter.OnPostIn
         return binding.getRoot();
     }
 
+    /**
+     * Initialise les composants de l'interface utilisateur et configure les observateurs
+     * après que la vue a été créée.
+     *
+     * @param view La vue racine du fragment
+     * @param savedInstanceState L'état sauvegardé du fragment
+     */
     @Override
     public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
         super.onViewCreated(view, savedInstanceState);
@@ -92,6 +113,10 @@ public class PostDetailFragment extends Fragment implements PostAdapter.OnPostIn
         setupInteractionButtons();
     }
 
+    /**
+     * Configure la barre d'outils du fragment.
+     * Ajoute un bouton de retour pour naviguer vers le fragment précédent.
+     */
     private void setupToolbar() {
         binding.toolbar.setNavigationOnClickListener(v -> {
             Navigation.findNavController(requireView()).navigateUp();
@@ -99,12 +124,19 @@ public class PostDetailFragment extends Fragment implements PostAdapter.OnPostIn
         binding.toolbar.setTitle("Post");
     }
 
+    /**
+     * Configure le RecyclerView pour afficher la liste des réponses au post.
+     */
     private void setupRepliesRecyclerView() {
         repliesAdapter = new PostAdapter(this);
         binding.repliesRecyclerView.setLayoutManager(new LinearLayoutManager(requireContext()));
         binding.repliesRecyclerView.setAdapter(repliesAdapter);
     }
 
+    /**
+     * Configure l'observateur pour les posts.
+     * Filtre la liste des posts pour trouver le post actuel et ses réponses.
+     */
     private void observePosts() {
         postViewModel.getPosts().observe(getViewLifecycleOwner(), posts -> {
             if (posts != null && !posts.isEmpty()) {
@@ -129,6 +161,11 @@ public class PostDetailFragment extends Fragment implements PostAdapter.OnPostIn
         });
     }
 
+    /**
+     * Affiche les détails du post dans l'interface utilisateur.
+     *
+     * @param post Le post à afficher
+     */
     private void displayPostDetails(Post post) {
         // Afficher les détails du post
         String userIdToLoad = post.isRetweet() ? post.getOriginalUserId() : post.getUserId();
@@ -176,6 +213,11 @@ public class PostDetailFragment extends Fragment implements PostAdapter.OnPostIn
         }
     }
 
+    /**
+     * Met à jour l'interface utilisateur avec la liste des réponses au post.
+     *
+     * @param replies La liste des réponses au post
+     */
     private void updateRepliesUI(List<Post> replies) {
         if (replies.isEmpty()) {
             binding.noRepliesTextView.setVisibility(View.VISIBLE);
@@ -187,6 +229,10 @@ public class PostDetailFragment extends Fragment implements PostAdapter.OnPostIn
         }
     }
 
+    /**
+     * Configure l'observateur pour les messages d'erreur.
+     * Affiche les messages d'erreur à l'utilisateur lorsqu'ils surviennent.
+     */
     private void observeErrors() {
         postViewModel.getErrorMessage().observe(getViewLifecycleOwner(), errorMessage -> {
             if (errorMessage != null && !errorMessage.isEmpty()) {
@@ -195,6 +241,9 @@ public class PostDetailFragment extends Fragment implements PostAdapter.OnPostIn
         });
     }
 
+    /**
+     * Configure les boutons d'interaction avec le post (like, retweet, répondre).
+     */
     private void setupInteractionButtons() {
         // Bouton Like
         binding.likeButton.setOnClickListener(v -> {
@@ -225,6 +274,12 @@ public class PostDetailFragment extends Fragment implements PostAdapter.OnPostIn
         });
     }
 
+    /**
+     * Appelé lorsque l'utilisateur like un post.
+     * Délègue l'action au ViewModel.
+     *
+     * @param post Le post qui a été liké
+     */
     @Override
     public void onPostLiked(Post post) {
         try {
@@ -243,6 +298,12 @@ public class PostDetailFragment extends Fragment implements PostAdapter.OnPostIn
         }
     }
 
+    /**
+     * Appelé lorsque l'utilisateur clique sur un post.
+     * Navigue vers le fragment de détail du post.
+     *
+     * @param post Le post qui a été cliqué
+     */
     @Override
     public void onPostClicked(Post post) {
         // Si on clique sur une réponse, on pourrait ouvrir un nouveau détail pour cette réponse
@@ -253,6 +314,12 @@ public class PostDetailFragment extends Fragment implements PostAdapter.OnPostIn
         }
     }
 
+    /**
+     * Appelé lorsque l'utilisateur retweet un post.
+     * Délègue l'action au ViewModel.
+     *
+     * @param post Le post qui a été retweeté
+     */
     @Override
     public void onPostRetweeted(Post post) {
         try {
@@ -264,6 +331,12 @@ public class PostDetailFragment extends Fragment implements PostAdapter.OnPostIn
         }
     }
 
+    /**
+     * Appelé lorsque l'utilisateur partage un post.
+     * Ouvre un intent de partage.
+     *
+     * @param post Le post qui a été partagé
+     */
     @Override
     public void onPostShared(Post post) {
         try {
@@ -275,6 +348,12 @@ public class PostDetailFragment extends Fragment implements PostAdapter.OnPostIn
         }
     }
 
+    /**
+     * Appelé lorsque l'utilisateur répond à un post.
+     * Navigue vers le fragment de création de post en mode réponse.
+     *
+     * @param post Le post auquel l'utilisateur répond
+     */
     @Override
     public void onPostReplied(Post post) {
         try {
@@ -289,15 +368,23 @@ public class PostDetailFragment extends Fragment implements PostAdapter.OnPostIn
         }
     }
 
+    /**
+     * Appelé lorsque l'utilisateur clique sur un profil utilisateur.
+     * Navigue vers le fragment de profil de l'utilisateur.
+     *
+     * @param userId L'identifiant de l'utilisateur
+     */
     @Override
     public void onUserProfileClicked(String userId) {
         navigateToUserProfile(userId);
     }
 
     /**
-     * Charge l'icône de profil d'un utilisateur à partir de Firebase
-     * @param userId L'ID de l'utilisateur
-     * @param imageView La vue d'image à mettre à jour
+     * Charge l'icône de profil de l'utilisateur depuis Firebase.
+     * Utilise ProfileIconHelper pour afficher une icône colorée si aucune image n'est disponible.
+     *
+     * @param userId L'identifiant de l'utilisateur
+     * @param imageView La vue CircleImageView où afficher l'icône
      */
     private void loadUserProfileIcon(String userId, CircleImageView imageView) {
         if (userId == null || userId.isEmpty()) {
@@ -348,8 +435,9 @@ public class PostDetailFragment extends Fragment implements PostAdapter.OnPostIn
     }
     
     /**
-     * Navigue vers le profil de l'utilisateur
-     * @param userId L'ID de l'utilisateur
+     * Navigue vers le fragment de profil de l'utilisateur.
+     *
+     * @param userId L'identifiant de l'utilisateur
      */
     private void navigateToUserProfile(String userId) {
         if (userId == null || userId.isEmpty()) {
@@ -367,6 +455,9 @@ public class PostDetailFragment extends Fragment implements PostAdapter.OnPostIn
         }
     }
 
+    /**
+     * Nettoie les ressources lorsque la vue est détruite.
+     */
     @Override
     public void onDestroyView() {
         super.onDestroyView();

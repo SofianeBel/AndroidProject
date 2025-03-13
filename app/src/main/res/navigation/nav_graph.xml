@@ -32,6 +32,9 @@
         <action
             android:id="@+id/action_profileFragment_to_followListFragment"
             app:destination="@id/navigation_follow_list" />
+        <action
+            android:id="@+id/action_profileFragment_self"
+            app:destination="@id/navigation_profile" />
         <argument
             android:name="userId"
             app:argType="string"
