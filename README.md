@@ -18,7 +18,6 @@ Une application Android de microblogging inspirée de Twitter, permettant aux ut
 ## Fonctionnalités
 
 ### Version 1.5.7
-- **Correction du nom de l'application** : Changement du nom de "MicroVoice" et "H3 Project" à "NewTwitter" pour une cohérence dans toute l'application
 - **Amélioration de l'expérience utilisateur** : Uniformisation de l'identité visuelle de l'application
 
 ### Version 1.5.6
