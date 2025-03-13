@@ -1,5 +1,5 @@
 <resources>
-    <string name="app_name">H3 Project</string>
+    <string name="app_name">NewTwitter</string>
     <!-- Create Post Fragment -->
     <string name="create_new_post">Create New Post</string>
     <string name="whats_on_your_mind">What\'s on your mind?</string>
